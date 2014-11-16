@@ -1,4 +1,3 @@
-tgi-store-remote
-================
+# tgi-store-remote
 
-Remote Store
+RemoteStore [read the spec](spec/README.md).
