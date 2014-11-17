@@ -9,9 +9,10 @@
     }
   ],
   "dependencies": {
+    "socket.io": "^1.2.0",
+    "tgi-core": "*",
     "tgi-spec": "*",
-    "tgi-utility": "*",
-    "tgi-core": "*"
+    "tgi-utility": "*"
   },
   "scripts": {
     "test": "node spec/node-runner.js"

@@ -3011,7 +3011,7 @@ spec.test('lib/tgi-store-remote.spec.js', 'REMOTE_STORE', '', function (callback
     });
     spec.heading('Store tests are applied', function () {
       spec.runnerStoreMethods(RemoteStore,true);
-      //spec.runnerListStoreIntegration(RemoteStore);
+      spec.runnerListStoreIntegration(RemoteStore);
     });
   });
 });
