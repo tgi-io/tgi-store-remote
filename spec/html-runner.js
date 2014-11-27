@@ -9,7 +9,7 @@ var spec = new Spec();
   testSpec(spec, CORE);
   log('Connecting to host...');
   var hostStore = new RemoteStore({name: 'Host Test Store'});
-  hostStore.onConnect('http://localhost', function (store, err) {
+  hostStore.onConnect('fuckstick http://localhost', function (store, err) {
     if (err) {
       logError('hostStore unavailable (' + err + ')');
     } else {

@@ -1273,7 +1273,9 @@ function Transport(location, callBack) {
   self.initialConnect = true;
   self.location = location;
   if (self.location==='') self.location='http host';
-  self.socket = io.connect(location);
+  self.socket = io.connect(location,{
+    'reconnection': true
+  });
   self.socket.on('connect', function () {
     self.connected = true;
     self.initialConnect = false;
@@ -1283,7 +1285,11 @@ function Transport(location, callBack) {
   self.socket.on('connecting', function () {
     console.log('socket.io ('+self.location+') connecting');
   });
+  self.socket.on('event', function () {
+    console.log('socket.io ('+self.location+') event');
+  });
   self.socket.on('error', function (reason) {
+    console.log('fuck me');
     var theReason = reason;
     if (theReason.length < 1) theReason = "(unknown)";
     console.error('socket.io ('+self.location+') error: ' + theReason + '.');
