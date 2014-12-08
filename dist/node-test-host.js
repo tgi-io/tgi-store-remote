@@ -1,112 +1,109 @@
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/misc/lib-header
- **/
-(function () {
-"use strict";
-var root = this;
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-store-remote/lib/tgi-store-remote.lib.js
- */
-var REMOTE_STORE = function () {
-  return {
-    version: '0.0.7',
-    Application: Application,
-    Attribute: Attribute,
-    Command: Command,
-    Delta: Delta,
-    Interface: Interface,
-    List: List,
-    Log: Log,
-    MemoryStore: MemoryStore,
-    Message: Message,
-    Model: Model,
-    Presentation: Presentation,
-    Procedure: Procedure,
-    Request: Request,
-    Session: Session,
-    Store: Store,
-    Transport: Transport,
-    User: User,
-    Workspace: Workspace,
-    RemoteStore: RemoteStore,
-    injectMethods: function (that) {
-      that.Application = Application;
-      that.Attribute = Attribute;
-      that.Command = Command;
-      that.Delta = Delta;
-      that.Interface = Interface;
-      that.List = List;
-      that.Log = Log;
-      that.MemoryStore = MemoryStore;
-      that.Message = Message;
-      that.Model = Model;
-      that.Presentation = Presentation;
-      that.Procedure = Procedure;
-      that.Request = Request;
-      that.Store = Store;
-      that.Session = Session;
-      that.Transport = Transport;
-      that.User = User;
-      that.Workspace = Workspace;
-      that.RemoteStore = RemoteStore;
-    }
-  };
-};
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core.js
- **/
-var CORE = function () {
-  return {
-    version: '0.0.7',
-    Application: Application,
-    Attribute: Attribute,
-    Command: Command,
-    Delta: Delta,
-    Interface: Interface,
-    List: List,
-    Log: Log,
-    MemoryStore: MemoryStore,
-    Message: Message,
-    Model: Model,
-    Presentation: Presentation,
-    Procedure: Procedure,
-    Request: Request,
-    Session: Session,
-    Store: Store,
-    Transport: Transport,
-    User: User,
-    Workspace: Workspace,
-    injectMethods: function (that) {
-      that.Application = Application;
-      that.Attribute = Attribute;
-      that.Command = Command;
-      that.Delta = Delta;
-      that.Interface = Interface;
-      that.List = List;
-      that.Log = Log;
-      that.MemoryStore = MemoryStore;
-      that.Message = Message;
-      that.Model = Model;
-      that.Presentation = Presentation;
-      that.Procedure = Procedure;
-      that.Request = Request;
-      that.Store = Store;
-      that.Session = Session;
-      that.Transport = Transport;
-      that.User = User;
-      that.Workspace = Workspace;
-    }
-  };
-};
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core-attribute.source.js
- */
 /**
+ * tequila
+ * tequila-singleton.js
+ */
+
+var Tequila = (function () {
+  var singletonInstance;
+
+  function init() {
+    // Private methods and variables
+    var version = '0.1.5';
+    var attributeTypes = ['ID', 'String', 'Date', 'Boolean', 'Number', 'Model', 'Group', 'Table', 'Object'];
+    var AttributeEvents = ['StateChange', 'Validate'];
+    var ModelEvents = ['StateChange', 'Validate'];
+    var messageTypes = ['Null', 'Connected', 'Error', 'Sent', 'Ping', 'PutModel', 'PutModelAck', 'GetModel', 'GetModelAck', 'DeleteModel', 'DeleteModelAck', 'GetList', 'GetListAck'];
+    var commandTypes = ['Stub', 'Menu', 'Presentation', 'Function', 'Procedure'];
+    var commandEvents = ['BeforeExecute', 'AfterExecute', 'Error', 'Aborted', 'Completed'];
+    var logTypes = ['Text', 'Delta'];
+    var messageHandlers = {};
+    return    {
+      // Public methods and variables
+      getVersion: function () {
+        return version;
+      },
+      isServer: function () {
+        return typeof exports !== 'undefined' && this.exports !== exports
+      },
+      contains: function (a, obj) {
+        for (var i = 0; i < a.length; i++) {
+          if (a[i] === obj) return true;
+        }
+        return false;
+      },
+      getInvalidProperties: function (args, allowedProperties) {
+        var props = [];
+        for (var property in args) {
+          if (args.hasOwnProperty(property)) {
+            if (!this.contains(allowedProperties, property)) {
+              props.push(property);
+            }
+          }
+        }
+        return props;
+      },
+      inheritPrototype: function (p) {
+        if (p == null) throw TypeError();
+        if (Object.create) return Object.create(p);
+        var t = typeof p;
+        if (t !== "object" && typeof t !== "function") throw TypeError();
+        function f() {
+        };
+        f.prototype = p;
+        return new f();
+      },
+      getAttributeTypes: function () {
+        return attributeTypes.slice(0); // copy array
+      },
+      getAttributeEvents: function () {
+        return AttributeEvents.slice(0); // copy array
+      },
+      getModelEvents: function () {
+        return ModelEvents.slice(0); // copy array
+      },
+      getMessageTypes: function () {
+        return messageTypes.slice(0); // copy array
+      },
+      getCommandTypes: function () {
+        return commandTypes.slice(0); // copy array
+      },
+      getCommandEvents: function () {
+        return commandEvents.slice(0); // copy array
+      },
+      getLogTypes: function () {
+        return logTypes.slice(0); // copy array
+      },
+      setMessageHandler: function (message, handler) {
+        messageHandlers[message] = handler;
+      },
+      hostMessageProcess: function (obj, fn) {
+        console.log('hostMessageProcess: ', JSON.stringify(obj));
+        if (messageHandlers[obj.type]) {
+          messageHandlers[obj.type](obj.contents, fn);
+        } else {
+//          console.log('socket.io ackmessage: ' + JSON.stringify(obj));
+          fn(true); // todo should this be an error?
+        }
+      }
+    };
+  }
+
+  return function () {
+    if (!singletonInstance) singletonInstance = init();
+    return singletonInstance;
+  };
+})();
+// Library scoped ref to singleton
+var T = Tequila();
+;
+/**
+ * tequila
+ * attribute-class
+ */
+/*
  * Constructor
  */
- function Attribute(args, arg2) {
+function Attribute(args, arg2) {
   var splitTypes; // For String(30) type
   if (false === (this instanceof Attribute)) throw new Error('new operator required');
   if (typeof args == 'string') {
@@ -135,11 +132,11 @@ var CORE = function () {
   var standardProperties = ['name', 'type', 'label', 'hint', 'value', 'validationRule'];
   switch (this.type) {
     case 'ID':
-      unusedProperties = getInvalidProperties(args, standardProperties);
+      unusedProperties = T.getInvalidProperties(args, standardProperties);
       this.value = args.value || null;
       break;
     case 'String':
-      unusedProperties = getInvalidProperties(args, standardProperties.concat(['placeHolder', 'quickPick', 'size']));
+      unusedProperties = T.getInvalidProperties(args, standardProperties.concat(['placeHolder', 'quickPick', 'size']));
       this.size = splitTypes[1] ? splitTypes[1] : typeof args.size == 'number' ? args.size : args.size || 50;
       this.value = args.value || null;
       if (args.quickPick)
@@ -147,19 +144,19 @@ var CORE = function () {
       this.placeHolder = args.placeHolder || null;
       break;
     case 'Date':
-      unusedProperties = getInvalidProperties(args, standardProperties.concat('placeHolder'));
+      unusedProperties = T.getInvalidProperties(args, standardProperties.concat('placeHolder'));
       this.value = args.value || null;
       this.placeHolder = args.placeHolder || null;
       break;
     case 'Boolean':
-      unusedProperties = getInvalidProperties(args, standardProperties);
+      unusedProperties = T.getInvalidProperties(args, standardProperties);
       if (args.value === false)
         this.value = false;
       else
         this.value = args.value || null;
       break;
     case 'Number':
-      unusedProperties = getInvalidProperties(args, standardProperties.concat('placeHolder'));
+      unusedProperties = T.getInvalidProperties(args, standardProperties.concat('placeHolder'));
       if (args.value === 0)
         this.value = 0;
       else
@@ -167,22 +164,22 @@ var CORE = function () {
       this.placeHolder = args.placeHolder || null;
       break;
     case 'Model':
-      unusedProperties = getInvalidProperties(args, standardProperties);
+      unusedProperties = T.getInvalidProperties(args, standardProperties);
       this.value = args.value || null;
       if (this.value instanceof Attribute.ModelID)
         this.modelType = this.value.modelType;
       break;
     case 'Group':
-      unusedProperties = getInvalidProperties(args, standardProperties);
+      unusedProperties = T.getInvalidProperties(args, standardProperties);
       this.value = args.value || null;
       break;
     case 'Table':
-      unusedProperties = getInvalidProperties(args, standardProperties.concat('group'));
+      unusedProperties = T.getInvalidProperties(args, standardProperties.concat('group'));
       this.value = args.value || null;
       this.group = args.group || null;
       break;
     case 'Object':
-      unusedProperties = getInvalidProperties(args, standardProperties);
+      unusedProperties = T.getInvalidProperties(args, standardProperties);
       this.value = args.value || null;
       break;
     default:
@@ -197,7 +194,7 @@ var CORE = function () {
   this._eventListeners = [];
   this._errorConditions = {};
 }
-/**
+/*
  * Additional Constructors
  */
 Attribute.ModelID = function (model) {
@@ -213,7 +210,7 @@ Attribute.ModelID.prototype.toString = function () {
   else
     return 'ModelID(' + this.modelType + ':' + this.value + ')';
 };
-/**
+/*
  * Methods
  */
 Attribute.prototype.toString = function () {
@@ -229,7 +226,7 @@ Attribute.prototype.onEvent = function (events, callback) {
   for (var i in events) {
     if (events.hasOwnProperty(i))
       if (events[i] != '*')
-        if (!contains(['StateChange', 'Validate'], events[i]))
+        if (!T.contains(T.getAttributeEvents(), events[i]))
           throw new Error('Unknown command event: ' + events[i]);
   }
   // All good add to chain
@@ -241,7 +238,7 @@ Attribute.prototype._emitEvent = function (event) {
   for (i in this._eventListeners) {
     if (this._eventListeners.hasOwnProperty(i)) {
       var subscriber = this._eventListeners[i];
-      if ((subscriber.events.length && subscriber.events[0] === '*') || contains(subscriber.events, event)) {
+      if ((subscriber.events.length && subscriber.events[0] === '*') || T.contains(subscriber.events, event)) {
         subscriber.callback.call(this, event);
       }
     }
@@ -279,7 +276,7 @@ Attribute.prototype.coerce = function (value) {
           return true;
         return false;
       }
-      return (newValue ? true : false); // truthy all we need
+      return (newValue == true);
     case 'Date':
       if (typeof newValue == 'string') {
         if (newValue.split('/').length == 2)
@@ -288,13 +285,12 @@ Attribute.prototype.coerce = function (value) {
       }
       return new Date(newValue);
   }
-  throw(Error('coerce cannot determine appropriate value'));
+  throw(Error('coerce cannot determine appropriate value'))
 };
 Attribute.prototype.getObjectStateErrors = function () {
-  var i;
   this.validationErrors = [];
   if (!this.name) this.validationErrors.push('name required');
-  if (!contains(['ID', 'String', 'Date', 'Boolean', 'Number', 'Model', 'Group', 'Table', 'Object'], this.type))
+  if (!T.contains(T.getAttributeTypes(), this.type))
     this.validationErrors.push('Invalid type: ' + this.type);
   switch (this.type) {
     case 'ID':
@@ -302,23 +298,23 @@ Attribute.prototype.getObjectStateErrors = function () {
     case 'String':
       if (typeof this.size != 'number') this.validationErrors.push('size must be a number from 1 to 255');
       if (this.size < 1 || this.size > 255) this.validationErrors.push('size must be a number from 1 to 255');
-      if (!(this.value === null || typeof this.value === 'string')) this.validationErrors.push('value must be null or a String');
+      if (!(this.value == null || typeof this.value == 'string')) this.validationErrors.push('value must be null or a String');
       break;
     case 'Date':
-      if (!(this.value === null || this.value instanceof Date)) this.validationErrors.push('value must be null or a Date');
+      if (!(this.value == null || this.value instanceof Date)) this.validationErrors.push('value must be null or a Date');
       break;
     case 'Boolean':
-      if (!(this.value === null || typeof this.value == 'boolean')) this.validationErrors.push('value must be null or a Boolean');
+      if (!(this.value == null || typeof this.value == 'boolean')) this.validationErrors.push('value must be null or a Boolean');
       break;
     case 'Number':
-      if (!(this.value === null || typeof this.value == 'number')) this.validationErrors.push('value must be null or a Number');
+      if (!(this.value == null || typeof this.value == 'number')) this.validationErrors.push('value must be null or a Number');
       break;
     case 'Model':
       if (!(this.value instanceof Attribute.ModelID)) this.validationErrors.push('value must be Attribute.ModelID');
       break;
     case 'Group':
-      if (this.value === null || this.value instanceof Array) {
-        for (i in this.value) {
+      if (this.value == null || this.value instanceof Array) {
+        for (var i in this.value) {
           if (this.value.hasOwnProperty(i)) {
             if (!(this.value[i] instanceof Attribute)) this.validationErrors.push('each element in group must be instance of Attribute');
             if (this.value[i].getObjectStateErrors().length) this.validationErrors.push('group contains invalid members');
@@ -336,7 +332,7 @@ Attribute.prototype.getObjectStateErrors = function () {
           if (this.group.value.length < 1) {
             this.validationErrors.push('group property value must contain at least one Attribute');
           } else {
-            for (i in this.group.value) {
+            for (var i in this.group.value) {
               if (this.group.value.hasOwnProperty(i)) {
                 if (!(this.group.value[i] instanceof Attribute)) this.validationErrors.push('each element in group must be instance of Attribute');
                 if (this.group.value[i].getObjectStateErrors().length) this.validationErrors.push('group contains invalid members');
@@ -351,7 +347,7 @@ Attribute.prototype.getObjectStateErrors = function () {
     default:
       break;
   }
-  var validationRuleBadProps = getInvalidProperties(this.validationRule, ['required', 'range', 'isOneOf', 'isValidModel']);
+  var validationRuleBadProps = T.getInvalidProperties(this.validationRule, ['required', 'range', 'isOneOf', 'isValidModel']);
   if (validationRuleBadProps.length)
     this.validationErrors.push('invalid validationRule: ' + validationRuleBadProps);
   this.validationMessage = this.validationErrors.length > 0 ? this.validationErrors[0] : '';
@@ -398,7 +394,7 @@ Attribute.prototype.validate = function (callBack) {
       this.validationRule.isOneOf = [this.validationRule.isOneOf]; // coerce to array
     }
     if (this.validationRule.isOneOf.indexOf(this.value) == -1)
-      this.validationErrors.push(this.label + ' invalid');
+      this.validationErrors.push(this.label + ' invalid' );
   }
 
   // All done...
@@ -417,23 +413,13 @@ Attribute.prototype.clearError = function (condition) {
   condition = condition || '';
   if (!condition) throw new Error('condition required');
   delete this._errorConditions[condition];
-};
+};;
 /**
- * Simple functions
+ * tequila
+ * command-class
  */
-Attribute.getTypes = function () {
-  return ['ID', 'String', 'Date', 'Boolean', 'Number', 'Model', 'Group', 'Table', 'Object'].slice(0); // copy array
-};
-Attribute.getEvents = function () {
-  return ['StateChange', 'Validate'].slice(0); // copy array
-};
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core-command.source.js
- */
-/**
- * Command Constructor
- */
-function Command(args) {
+// Command Constructor
+function Command(/* does this matter */ args) {
   if (false === (this instanceof Command)) throw new Error('new operator required');
   if (typeof args == 'function') { // shorthand for function command
     var theFunc = args;
@@ -441,7 +427,7 @@ function Command(args) {
   }
   args = args || {};
   var i;
-  var unusedProperties = getInvalidProperties(args,
+  var unusedProperties = T.getInvalidProperties(args,
     ['name', 'description', 'type', 'contents', 'scope', 'timeout', 'theme', 'icon', 'bucket']);
   var errorList = [];
   for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
@@ -452,7 +438,7 @@ function Command(args) {
   if ('string' != typeof this.name) throw new Error('name must be string');
   if ('undefined' == typeof this.description) this.description = this.name + ' Command';
   if ('undefined' == typeof this.type) this.type = 'Stub';
-  if (!contains(['Stub', 'Menu', 'Presentation', 'Function', 'Procedure'], this.type)) throw new Error('Invalid command type: ' + this.type);
+  if (!T.contains(T.getCommandTypes(), this.type)) throw new Error('Invalid command type: ' + this.type);
   switch (this.type) {
     case 'Stub':
       break;
@@ -474,31 +460,29 @@ function Command(args) {
     case 'Procedure':
       if (!(this.contents instanceof Procedure)) throw new Error('contents must be a Procedure');
       break;
-    default:
-      throw new TypeError();
   }
   if ('undefined' != typeof this.scope)
     if (!((this.scope instanceof Model) || (this.scope instanceof List)))
       throw new Error('optional scope property must be Model or List');
   if ('undefined' != typeof this.timeout)
-    if (typeof this.timeout != 'number') throw new Error('timeout must be a Number');
+    if (typeof this.timeout != 'Number') throw new Error('timeout must be a Number');
   if ('undefined' != typeof this.timeout)
-    if (typeof this.timeout != 'number') throw new Error('timeout must be a Number');
+    if (typeof this.timeout != 'Number') throw new Error('timeout must be a Number');
   if ('undefined' != typeof this.theme) {
     if ('string' != typeof this.theme) throw new Error('invalid theme');
-    if (!contains(['default', 'primary', 'success', 'info', 'warning', 'danger', 'link'], this.theme))
+    if (!T.contains(['default', 'primary', 'success', 'info', 'warning', 'danger', 'link'], this.theme))
       throw new Error('invalid theme');
   }
   if ('undefined' != typeof this.icon) {
     if ('string' != typeof this.icon) throw new Error('invalid icon');
-    if (!contains(['fa', 'glyphicon'], this.icon.split('-')[0]) || !this.icon.split('-')[1])
+    if (!T.contains(['fa', 'glyphicon'], this.icon.split('-')[0]) || !this.icon.split('-')[1])
       throw new Error('invalid icon');
   }
 
   // Validations done
   this._eventListeners = [];
 }
-/**
+/*
  * Methods
  */
 Command.prototype.toString = function () {
@@ -514,7 +498,7 @@ Command.prototype.onEvent = function (events, callback) {
   for (var i in events) {
     if (events.hasOwnProperty(i))
       if (events[i] != '*')
-        if (!contains(['BeforeExecute', 'AfterExecute', 'Error', 'Aborted', 'Completed'], events[i]))
+        if (!T.contains(T.getCommandEvents(), events[i]))
           throw new Error('Unknown command event: ' + events[i]);
   }
   // All good add to chain
@@ -525,7 +509,7 @@ Command.prototype._emitEvent = function (event) {
   for (i in this._eventListeners) {
     if (this._eventListeners.hasOwnProperty(i)) {
       var subscriber = this._eventListeners[i];
-      if ((subscriber.events.length && subscriber.events[0] === '*') || contains(subscriber.events, event)) {
+      if ((subscriber.events.length && subscriber.events[0] === '*') || T.contains(subscriber.events, event)) {
         subscriber.callback.call(this, event);
       }
     }
@@ -535,7 +519,7 @@ Command.prototype._emitEvent = function (event) {
 };
 Command.prototype.execute = function () {
   if (!this.type) throw new Error('command not implemented');
-  if (!contains(['Function', 'Procedure', 'Presentation'], this.type)) throw new Error('command type ' + this.type + ' not implemented');
+  if (!T.contains(['Function', 'Procedure', 'Presentation'], this.type)) throw new Error('command type ' + this.type + ' not implemented');
   var errors;
   switch (this.type) {
     case 'Presentation':
@@ -559,7 +543,7 @@ Command.prototype.execute = function () {
         setTimeout(callFunc, 0);
         break;
       case 'Procedure':
-        setTimeout(procedureExecute, 0);
+        setTimeout(ProcedureExecute, 0);
         break;
     }
   } catch (e) {
@@ -580,7 +564,7 @@ Command.prototype.execute = function () {
     }
   }
 
-  function procedureExecute() {
+  function ProcedureExecute() {
     self.status = 0;
     var tasks = self.contents.tasks || [];
     for (var t = 0; t < tasks.length; t++) {
@@ -639,7 +623,7 @@ Command.prototype.execute = function () {
       case 'Completed':
         for (var t in tasks) {
           if (tasks.hasOwnProperty(t)) {
-            if (!tasks[t].command.status || tasks[t].command.status === 0) {
+            if (!tasks[t].command.status || tasks[t].command.status == 0) {
               allTasksDone = false;
             }
           }
@@ -647,7 +631,7 @@ Command.prototype.execute = function () {
         if (allTasksDone)
           self.complete(); // todo when all run
         else
-          procedureExecute();
+          ProcedureExecute();
         break;
     }
   }
@@ -661,19 +645,12 @@ Command.prototype.complete = function () {
   this.status = 1;
   this._emitEvent('Completed');
 };
+;
 /**
- * Simple functions
+ * tequila
+ * delta-class
  */
-Command.getTypes = function () {
-  return ['ID', 'String', 'Date', 'Boolean', 'Number', 'Model', 'Group', 'Table', 'Object'].slice(0); // copy array
-};
-Command.getEvents = function () {
-  return ['BeforeExecute', 'AfterExecute', 'Error', 'Aborted', 'Completed'].slice(0); // copy array
-};
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core-delta.source.js
- */
-/**
+/*
  * Constructor
  */
 function Delta(modelID) {
@@ -683,11 +660,12 @@ function Delta(modelID) {
   this.modelID = modelID;
   this.attributeValues = {};
 }
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core-interface.source.js
- */
+;
 /**
+ * tequila
+ * interface-class
+ */
+/*
  * Constructor
  */
 function Interface(args) {
@@ -696,7 +674,7 @@ function Interface(args) {
   args.name = args.name || '(unnamed)';
   args.description = args.description || 'a Interface';
   var i;
-  var unusedProperties = getInvalidProperties(args, ['name', 'description']);
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'description']);
   var errorList = [];
   for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1)
@@ -710,7 +688,7 @@ function Interface(args) {
   // args ok, now copy to object
   for (i in args) this[i] = args[i];
 }
-/**
+/*
  * Methods
  */
 Interface.prototype.toString = function () {
@@ -777,10 +755,12 @@ Interface.prototype.render = function (presentation, callBack) {
   if (false === (presentation instanceof Presentation)) throw new Error('Presentation object required');
   if (callBack && typeof callBack != 'function') throw new Error('optional second argument must a commandRequest callback function');
 };
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core-list.source.js
+;
+/**
+ * tequila
+ * list-class
  */
+
 // Constructor
 var List = function (model) {
   if (false === (this instanceof List)) throw new Error('new operator required');
@@ -815,14 +795,13 @@ List.prototype.set = function (attribute,value) {
   throw new Error('attribute not valid for list model');
 };
 List.prototype.addItem = function (item) {
-  var i;
   var values = [];
   if (item) {
-    for (i in item.attributes) {
+    for (var i in item.attributes) {
       values.push(item.attributes[i].value);
     }
   } else {
-    for (i in this.model.attributes) {
+    for (var i in this.model.attributes) {
       values.push(undefined);
     }
   }
@@ -882,28 +861,54 @@ List.prototype.sort = function (key) {
     return 0;
   });
 };
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core-model.source.js
- */
+;
 /**
- * Model Constructor
+ * tequila
+ * message-class
  */
+/*
+ * Constructor
+ */
+function Message(type,contents) {
+  if (false === (this instanceof Message)) throw new Error('new operator required');
+  if ('undefined' == typeof type) throw new Error('message type required');
+  if (!T.contains(T.getMessageTypes(), type)) throw new Error('Invalid message type: ' + type);
+  this.type = type;
+  this.contents = contents;
+}
+/*
+ * Methods
+ */
+Message.prototype.toString = function () {
+  switch (this.type) {
+    case 'Null':
+      return this.type+ ' Message';
+      break;
+    default:
+      return this.type+ ' Message: ' + this.contents;
+      break;
+  }
+};
+;
+/**
+ * tequila
+ * model-class
+ */
+// Model Constructor
 var Model = function (args) {
-  var i;
   if (false === (this instanceof Model)) throw new Error('new operator required');
   this.modelType = "Model";
   this.attributes = [new Attribute('id', 'ID')];
   args = args || {};
   if (args.attributes) {
-    for (i in args.attributes) {
+    for (var i in args.attributes) {
       if (args.attributes.hasOwnProperty(i))
         this.attributes.push(args.attributes[i]);
     }
   }
-  var unusedProperties = getInvalidProperties(args, ['attributes']);
+  var unusedProperties = T.getInvalidProperties(args, ['attributes']);
   var errorList = this.getObjectStateErrors(); // before leaving make sure valid Model
-  for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Model: multiple errors');
   if (errorList.length) throw new Error('error creating Model: ' + errorList[0]);
   // Validations done
@@ -930,7 +935,7 @@ Model.prototype.getObjectStateErrors = function () {
       this.validationErrors.push('attributes must not be empty');
     } else {
       for (var i = 0; i < this.attributes.length; i++) {
-        if (i === 0 && (!(this.attributes[i] instanceof Attribute) || this.attributes[i].type != "ID")) this.validationErrors.push('first attribute must be ID');
+        if (i == 0 && (!(this.attributes[i] instanceof Attribute) || this.attributes[i].type != "ID")) this.validationErrors.push('first attribute must be ID');
         if (!(this.attributes[i] instanceof Attribute)) this.validationErrors.push('attribute must be Attribute');
       }
     }
@@ -983,7 +988,6 @@ Model.prototype.validate = function (callBack) {
   }
 
   // Now check each attribute
-  /* jshint ignore:start */ // todo Don't make functions within a loop.
   for (i = 0; i < model.attributes.length; i++) {
     validationsPending++;
     (function (curAttribute) {
@@ -993,7 +997,7 @@ Model.prototype.validate = function (callBack) {
             model.validationErrors.push('bush');
           }
           // done with this one - see if done with all
-          if (--validationsPending === 0) {
+          if (--validationsPending == 0) {
             /** Final test is here ... **/
             // If no errors in attributes validate model
             if (!model.validationErrors.length)
@@ -1005,9 +1009,8 @@ Model.prototype.validate = function (callBack) {
           }
         });
       }, 0);
-    }(model.attributes[i]));
+    }(model.attributes[i]))
   }
-  /* jshint ignore:end */
 
 //  // All done...
 //  this.validationMessage = this.validationErrors.length > 0 ? this.validationErrors[0] : '';
@@ -1025,7 +1028,7 @@ Model.prototype.onEvent = function (events, callback) {
   for (var i in events) {
     if (events.hasOwnProperty(i))
       if (events[i] != '*')
-        if (!contains(['StateChange', 'Validate'], events[i]))
+        if (!T.contains(T.getModelEvents(), events[i]))
           throw new Error('Unknown command event: ' + events[i]);
   }
   // All good add to chain
@@ -1037,7 +1040,7 @@ Model.prototype._emitEvent = function (event) {
   for (i in this._eventListeners) {
     if (this._eventListeners.hasOwnProperty(i)) {
       var subscriber = this._eventListeners[i];
-      if ((subscriber.events.length && subscriber.events[0] === '*') || contains(subscriber.events, event)) {
+      if ((subscriber.events.length && subscriber.events[0] === '*') || T.contains(subscriber.events, event)) {
         subscriber.callback.call(this, event);
       }
     }
@@ -1054,63 +1057,17 @@ Model.prototype.clearError = function (condition) {
   condition = condition || '';
   if (!condition) throw new Error('condition required');
   delete this._errorConditions[condition];
-};
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core-message.source.js
- */
+};;
 /**
- * Constructor
+ * tequila
+ * procedure-class
  */
-function Message(type, contents) {
-  if (false === (this instanceof Message)) throw new Error('new operator required');
-  if ('undefined' == typeof type) throw new Error('message type required');
-  if (!contains(Message.getTypes(), type)) throw new Error('Invalid message type: ' + type);
-  this.type = type;
-  this.contents = contents;
-}
-/**
- * Methods
- */
-Message.prototype.toString = function () {
-  switch (this.type) {
-    case 'Null':
-      return this.type + ' Message';
-    default:
-      return this.type + ' Message: ' + this.contents;
-  }
-};
-/**
- * Simple functions
- */
-Message.getTypes = function () {
-  return [
-    'Null',
-    'Connected',
-    'Error',
-    'Sent',
-    'Ping',
-    'PutModel',
-    'PutModelAck',
-    'GetModel',
-    'GetModelAck',
-    'DeleteModel',
-    'DeleteModelAck',
-    'GetList',
-    'GetListAck'
-  ].slice(0); // copy array
-};
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core-procedure.source.js
- */
-/**
- * Model Constructor
- */
+// Model Constructor
 var Procedure = function (args) {
   if (false === (this instanceof Procedure)) throw new Error('new operator required');
   args = args || {};
   var i;
-  var unusedProperties = getInvalidProperties(args, ['tasks', 'tasksNeeded', 'tasksCompleted']);
+  var unusedProperties = T.getInvalidProperties(args, ['tasks', 'tasksNeeded', 'tasksCompleted']);
   var errorList = [];
   for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1)
@@ -1134,7 +1091,7 @@ Procedure.prototype.getObjectStateErrors = function () {
   for (i in this.tasks) {
     if (this.tasks.hasOwnProperty(i)) {
       var task = this.tasks[i];
-      unusedProperties = getInvalidProperties(task, ['label', 'command', 'requires', 'timeout']);
+      unusedProperties = T.getInvalidProperties(task, ['label', 'command', 'requires', 'timeout']);
       for (j = 0; j < unusedProperties.length; j++) errorList.push('invalid task[' + i + '] property: ' + unusedProperties[j]);
       if (typeof task.label != 'undefined' && typeof task.label != 'string')
         errorList.push('task[' + i + '].label must be string');
@@ -1145,7 +1102,7 @@ Procedure.prototype.getObjectStateErrors = function () {
         task.requires = -1; // default to
       if (!(task.requires instanceof Array)) task.requires = [task.requires]; // coerce to array
       for (j in task.requires) {
-        if (task.requires.hasOwnProperty(j) && task.requires[j] !== null)
+        if (task.requires.hasOwnProperty(j) && task.requires[j] != null)
           switch (typeof task.requires[j]) {
             case 'string':
               // make sure label exists
@@ -1168,11 +1125,12 @@ Procedure.prototype.getObjectStateErrors = function () {
   }
   return errorList.length ? errorList : null;
 };
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core-request.source.js
- */
+;
 /**
+ * tequila
+ * Request-class
+ */
+/*
  * Constructor
  */
 function Request(args) {
@@ -1188,50 +1146,49 @@ function Request(args) {
   switch (this.type) {
     case 'Command':
       this.command = args.command || null;
-      if (!(this.command instanceof Command)) throw new Error('command object required');
+      if (false === (this.command instanceof Command)) throw new Error('command object required');
       break;
   }
 }
-/**
+/*
  * Methods
  */
 Request.prototype.toString = function () {
   switch (this.type) {
     case 'Command':
       return this.type + ' Request: ' + this.command;
+      break;
     default:
       return this.type + ' Request';
+      break;
   }
 };
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core-store.source.js
- */
-
+;
 /**
- * Constructor
+ * tequila
+ * store-class
  */
+
+// Constructor
 var Store = function (args) {
   if (false === (this instanceof Store)) throw new Error('new operator required');
   args = args || {};
   this.storeType = args.storeType || "Store";
   this.name = args.name || 'a ' + this.storeType;
   this.storeProperty = {
-    isReady: false,
+    isReady: true,
     canGetModel: false,
     canPutModel: false,
     canDeleteModel: false,
     canGetList: false
   };
-  var unusedProperties = getInvalidProperties(args, ['name', 'storeType']);
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
   var errorList = [];
   for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
   if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
 };
-/**
- * Methods
- */
+// Methods
 Store.prototype.toString = function () {
   if (this.name == 'a ' + this.storeType) {
     return this.name;
@@ -1259,9 +1216,10 @@ Store.prototype.deleteModel = function () {
 Store.prototype.getList = function () {
   throw new Error('Store does not provide getList');
 };
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core-transport.source.js
+;
+/**
+ * tequila
+ * transport-class
  */
 /* istanbul ignore next */
 function Transport(location, callBack) {
@@ -1272,50 +1230,43 @@ function Transport(location, callBack) {
   self.connected = false;
   self.initialConnect = true;
   self.location = location;
-  if (self.location === '') self.location = 'http host';
-  self.socket = io.connect(location, {reconnection: false});
+  if (self.location=='') self.location='http host';
+  self.socket = io.connect(location);
   self.socket.on('connect', function () {
     self.connected = true;
     self.initialConnect = false;
-    console.log('socket.io (' + self.location + ') connected');
+    console.log('socket.io ('+self.location+') connected');
     callBack.call(self, new Message('Connected', ''));
   });
   self.socket.on('connecting', function () {
-    console.log('socket.io (' + self.location + ') connecting');
+    console.log('socket.io ('+self.location+') connecting');
   });
   self.socket.on('error', function (reason) {
-    var theError = 'general error with ' + self.location + (reason ? ', reason ' + reason : '');
-    console.error(theError);
+    var theReason = reason;
+    if (theReason.length < 1) theReason = "(unknown)";
+    console.error('socket.io ('+self.location+') error: ' + theReason + '.');
     // If have not ever connected then signal error
     if (self.initialConnect) {
-      callBack.call(self, new Message('Error', theError));
-    }
-  });
-  self.socket.on('connect_error', function (reason) {
-    var theError = 'connect error with ' + self.location + (reason ? ', reason ' + reason : '');
-    console.error(theError);
-    // If have not ever connected then signal error
-    if (self.initialConnect) {
-      callBack.call(self, new Message('Error', theError));
+      callBack.call(self, new Message('Error', 'cannot connect'));
     }
   });
   self.socket.on('connect_failed', function (reason) {
-    var theError = 'connect failed with ' + self.location + (reason ? ', reason ' + reason : '');
-    console.error(theError);
+    var theReason = reason;
+    if (theReason.length < 1) theReason = "(unknown)";
+    console.error('socket.io ('+self.location+') connect_failed: ' + theReason + '.');
     // If have not ever connected then signal error
     if (self.initialConnect) {
-      callBack.call(self, new Message('Error', theError));
+      callBack.call(self, new Message('Error', 'cannot connect'));
     }
   });
   self.socket.on('message', function (obj) {
-    console.log('socket.io (' + self.location + ') message: ' + obj);
+    console.log('socket.io ('+self.location+') message: ' + obj);
   });
   self.socket.on('disconnect', function (reason) {
     self.connected = false;
-    console.log('socket.io (' + self.location + ') disconnect: ' + reason);
+    console.log('socket.io ('+self.location+') disconnect: ' + reason);
   });
 }
-
 /*
  * Methods
  */
@@ -1343,7 +1294,7 @@ Transport.prototype.close = function () {
     throw new Error('not connected');
   this.socket.disconnect();
 };
-
+;
 /**
  * tequila
  * application-model
@@ -1363,7 +1314,7 @@ var Application = function (args) {
   this.set('name','newApp');
   this.set('brand','NEW APP');
 };
-Application.prototype = Object.create(Model.prototype);
+Application.prototype = T.inheritPrototype(Model.prototype);
 /*
  * Methods
  */
@@ -1408,14 +1359,13 @@ Application.prototype.setPresentation = function (presentation) {
 };
 Application.prototype.getPresentation = function () {
   return this.presentation;
-};
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/models/tgi-core-model-log.source.js
+};;
+/**
+ * tequila
+ * log-model
  */
 
-/**
- * Constructor
- */
+// Model Constructor
 var Log = function (args) {
   if (false === (this instanceof Log)) throw new Error('new operator required');
   if (typeof args == 'string') {
@@ -1430,31 +1380,32 @@ var Log = function (args) {
   var my_logType = args.logType || 'Text';
   var my_importance = args.importance || 'Info';
   var my_contents = args.contents || '(no text)';
-  if (!contains(['Text', 'Delta'], my_logType)) throw new Error('Unknown log type: ' + my_logType);
+  if (!T.contains(T.getLogTypes(), my_logType)) throw new Error('Unknown log type: ' + my_logType);
+
   if (typeof args.logType != 'undefined') delete args.logType;
   if (typeof args.importance != 'undefined') delete args.importance;
   if (typeof args.contents != 'undefined') delete args.contents;
   args.attributes.push(new Attribute({name: 'dateLogged', type: 'Date', value: new Date()}));
   args.attributes.push(new Attribute({name: 'logType', type: 'String', value: my_logType}));
   args.attributes.push(new Attribute({name: 'importance', type: 'String', value: my_importance}));
-  if (my_logType == 'Delta')
+  if (my_logType=='Delta')
     args.attributes.push(new Attribute({name: 'contents', type: 'Object', value: my_contents}));
   else
     args.attributes.push(new Attribute({name: 'contents', type: 'String', value: my_contents}));
   Model.call(this, args);
   this.modelType = "Log";
 };
-Log.prototype = Object.create(Model.prototype);
-/**
+Log.prototype = T.inheritPrototype(Model.prototype);
+/*
  * Methods
  */
 Log.prototype.toString = function () {
-  if (this.get('logType') == 'Delta')
+  if (this.get('logType')=='Delta')
     return this.get('importance') + ': ' + '(delta)';
   else
     return this.get('importance') + ': ' + this.get('contents');
 };
-
+;
 /**
  * tequila
  * presentation-model
@@ -1472,14 +1423,14 @@ var Presentation = function (args) {
   Model.call(this, args);
   this.modelType = "Presentation";
 };
-Presentation.prototype = Object.create(Model.prototype);
+Presentation.prototype = T.inheritPrototype(Model.prototype);
 /*
  * Methods
  */
 Presentation.prototype.getObjectStateErrors = function (modelCheckOnly) {
   var i;
   this.validationErrors = Model.prototype.getObjectStateErrors.call(this);
-  if (!modelCheckOnly && this.validationErrors.length === 0) { // Only check if model it valid
+  if (!modelCheckOnly && this.validationErrors.length == 0) { // Only check if model it valid
     var contents = this.get('contents');
     var gotError = false;
     if (contents instanceof Array) {
@@ -1503,7 +1454,7 @@ Presentation.prototype.validate = function (callBack) {
   var e;
   for (e in this._errorConditions) {
     if (this._errorConditions.hasOwnProperty(e)) {
-      this.validationErrors.push(this._errorConditions[e]);
+      this.validationErrors.push(this._errorConditions[e])
     }
   }
   // validate each attribute in contents
@@ -1528,8 +1479,7 @@ Presentation.prototype.validate = function (callBack) {
   }
   function checkAttrib() {
     checkCount++;
-    // this is the attribute TODO this bad usage ?
-    if (this.validationMessage) // jshint ignore:line
+    if (this.validationMessage)
       gotError = true;
     if (checkCount==checkCount) {
       if (gotError)
@@ -1539,7 +1489,29 @@ Presentation.prototype.validate = function (callBack) {
     }
   }
 };
-
+;
+/**
+ * tequila
+ * user-core-model
+ */
+// Model Constructor
+var User = function (args) {
+  if (false === (this instanceof User)) throw new Error('new operator required');
+  args = args || {};
+  if (!args.attributes) {
+    args.attributes = [];
+  }
+  args.attributes.push(new Attribute({name: 'name', type: 'String(20)'}));
+  args.attributes.push(new Attribute({name: 'active', type: 'Boolean'}));
+  args.attributes.push(new Attribute({name: 'password', type: 'String(20)'}));
+  args.attributes.push(new Attribute({name: 'firstName', type: 'String(35)'}));
+  args.attributes.push(new Attribute({name: 'lastName', type: 'String(35)'}));
+  args.attributes.push(new Attribute({name: 'email', type: 'String(20)'}));
+  Model.call(this, args);
+  this.modelType = "User";
+  this.set('active',false)
+};
+User.prototype = T.inheritPrototype(Model.prototype);;
 /**
  * tequila
  * session-model
@@ -1562,7 +1534,7 @@ var Session = function (args) {
   this.modelType = "Session";
   this.set('active', false);
 };
-Session.prototype = Object.create(Model.prototype);
+Session.prototype = T.inheritPrototype(Model.prototype);
 /*
  * Methods
  */
@@ -1650,28 +1622,6 @@ Session.prototype.endSession = function (store, callBack) {
 };
 /**
  * tequila
- * user-core-model
- */
-// Model Constructor
-var User = function (args) {
-  if (false === (this instanceof User)) throw new Error('new operator required');
-  args = args || {};
-  if (!args.attributes) {
-    args.attributes = [];
-  }
-  args.attributes.push(new Attribute({name: 'name', type: 'String(20)'}));
-  args.attributes.push(new Attribute({name: 'active', type: 'Boolean'}));
-  args.attributes.push(new Attribute({name: 'password', type: 'String(20)'}));
-  args.attributes.push(new Attribute({name: 'firstName', type: 'String(35)'}));
-  args.attributes.push(new Attribute({name: 'lastName', type: 'String(35)'}));
-  args.attributes.push(new Attribute({name: 'email', type: 'String(20)'}));
-  Model.call(this, args);
-  this.modelType = "User";
-  this.set('active',false);
-};
-User.prototype = Object.create(Model.prototype);
-/**
- * tequila
  * workspace-class
  */
 function Workspace(args) {
@@ -1690,12 +1640,12 @@ function Workspace(args) {
   Model.call(this, args);
   this.modelType = "Workspace";
 }
-Workspace.prototype = Object.create(Model.prototype);
+Workspace.prototype = T.inheritPrototype(Model.prototype);
 /*
  * Methods
  */
 
-
+;
 /**
  * tequila
  * memory-store
@@ -1715,23 +1665,22 @@ var MemoryStore = function (args) {
   };
   this.data = [];// Each ele is an array of model types and contents (which is an array of IDs and Model Value Store)
   this.idCounter = 0;
-  var unusedProperties = getInvalidProperties(args, ['name', 'storeType']);
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
   var errorList = [];
   for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
   if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
 };
-MemoryStore.prototype = Object.create(Store.prototype);
+MemoryStore.prototype = T.inheritPrototype(Store.prototype);
 // Methods
 MemoryStore.prototype.getModel = function (model, callBack) {
-  var i, a;
   if (!(model instanceof Model)) throw new Error('argument must be a Model');
   if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
   if (!model.attributes[0].value) throw new Error('ID not set');
   if (typeof callBack != "function") throw new Error('callBack required');
   // Find model in memorystore, error out if can't find
   var modelIndex = -1;
-  for (i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
+  for (var i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
   if (modelIndex < 0) {
     callBack(model, new Error('model not found in store'));
     return;
@@ -1740,66 +1689,64 @@ MemoryStore.prototype.getModel = function (model, callBack) {
   var id = model.get('id');
   var storedPair = this.data[modelIndex][1];
   var instanceIndex = -1;
-  for (i = 0; instanceIndex < 0 && i < storedPair.length; i++) if (storedPair[i][0] == id) instanceIndex = i;
+  for (var i = 0; instanceIndex < 0 && i < storedPair.length; i++) if (storedPair[i][0] == id) instanceIndex = i;
   if (instanceIndex < 0) {
     callBack(model, new Error('id not found in store'));
     return;
   }
   // Copy values from store to ref model
   var storeValues = storedPair[instanceIndex][1];
-  for (a in model.attributes) {
+  for (var a in model.attributes) {
     model.attributes[a].value = storeValues[model.attributes[a].name];
   }
   callBack(model, undefined);
 };
 MemoryStore.prototype.putModel = function (model, callBack) {
-  var i, a, id, modelIndex, ModelValues, theName, theValue;
-
   if (!(model instanceof Model)) throw new Error('argument must be a Model');
   if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
   if (typeof callBack != "function") throw new Error('callBack required');
-  id = model.get('ID');
+  var id = model.get('ID');
   if (id) {
     // Find model in memorystore, error out if can't find
-    modelIndex = -1;
-    for (i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
+    var modelIndex = -1;
+    for (var i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
     if (modelIndex < 0) {
       callBack(model, new Error('model not found in store'));
       return;
     }
     // Find the ID now
     var instanceIndex = -1;
-    id = model.get('id');
+    var id = model.get('id');
     var storedPair = this.data[modelIndex][1];
-    for (i = 0; instanceIndex < 0 && i < storedPair.length; i++) if (storedPair[i][0] == id) instanceIndex = i;
+    for (var i = 0; instanceIndex < 0 && i < storedPair.length; i++) if (storedPair[i][0] == id) instanceIndex = i;
     if (instanceIndex < 0) {
       callBack(model, new Error('id not found in store'));
       return;
     }
     // Copy from store
-    ModelValues = {};
-    for (a in model.attributes) {
-      theName = model.attributes[a].name;
-      theValue = model.attributes[a].value;
+    var ModelValues = {};
+    for (var a in model.attributes) {
+      var theName = model.attributes[a].name;
+      var theValue = model.attributes[a].value;
       ModelValues[theName] = theValue;
     }
     storedPair[instanceIndex][1] = ModelValues;
     callBack(model, undefined);
   } else {
     // Find model in memorystore, add if not found
-    modelIndex = -1;
-    for (i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
+    var modelIndex = -1;
+    for (var i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
     if (modelIndex < 0) {
-      this.data.push([model.modelType, []]);
+      this.data.push([model.modelType, [] ]);
       modelIndex = this.data.length - 1;
     }
     // Add the id and model to memory store
     var newID = ++this.idCounter;
     model.set('id', newID);
-    ModelValues = {};
-    for (a in model.attributes) {
-      theName = model.attributes[a].name;
-      theValue = model.attributes[a].value;
+    var ModelValues = {};
+    for (var a in model.attributes) {
+      var theName = model.attributes[a].name;
+      var theValue = model.attributes[a].value;
       ModelValues[theName] = theValue;
     }
     this.data[modelIndex][1].push([newID, ModelValues]);
@@ -1808,13 +1755,12 @@ MemoryStore.prototype.putModel = function (model, callBack) {
 
 };
 MemoryStore.prototype.deleteModel = function (model, callBack) {
-  var i, a;
   if (!(model instanceof Model)) throw new Error('argument must be a Model');
   if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
   if (typeof callBack != "function") throw new Error('callBack required');
   // Find model in memorystore, error out if can't find
   var modelIndex = -1;
-  for (i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
+  for (var i = 0; i < this.data.length; i++) if (this.data[i][0] == model.modelType) modelIndex = i;
   if (modelIndex < 0) {
     callBack(model, new Error('model not found in store'));
     return;
@@ -1823,14 +1769,14 @@ MemoryStore.prototype.deleteModel = function (model, callBack) {
   var instanceIndex = -1;
   var id = model.get('id');
   var storedPair = this.data[modelIndex][1];
-  for (i = 0; instanceIndex < 0 && i < storedPair.length; i++) if (storedPair[i][0] == id) instanceIndex = i;
+  for (var i = 0; instanceIndex < 0 && i < storedPair.length; i++) if (storedPair[i][0] == id) instanceIndex = i;
   if (instanceIndex < 0) {
     callBack(model, new Error('id not found in store'));
     return;
   }
   // Splice out the stored values then prepare that Model for callback with ID stripped
   var storeValues = storedPair.splice(instanceIndex, 1)[0][1];
-  for (a in model.attributes) {
+  for (var a in model.attributes) {
     if (model.attributes[a].name == 'id')
       model.attributes[a].value = undefined;
     else
@@ -1839,7 +1785,7 @@ MemoryStore.prototype.deleteModel = function (model, callBack) {
   callBack(model, undefined);
 };
 MemoryStore.prototype.getList = function (list, filter, arg3, arg4) {
-  var callBack, order, i;
+  var callBack, order;
   if (typeof(arg4) == 'function') {
     callBack = arg4;
     order = arg3;
@@ -1851,7 +1797,7 @@ MemoryStore.prototype.getList = function (list, filter, arg3, arg4) {
   if (typeof callBack != "function") throw new Error('callBack required');
   // Find model in memorystore, error out if can't find
   var modelIndex = -1;
-  for (i = 0; i < this.data.length; i++) if (this.data[i][0] == list.model.modelType) modelIndex = i;
+  for (var i = 0; i < this.data.length; i++) if (this.data[i][0] == list.model.modelType) modelIndex = i;
   if (modelIndex < 0) {
     callBack(list);
     return;
@@ -1859,7 +1805,7 @@ MemoryStore.prototype.getList = function (list, filter, arg3, arg4) {
   list.clear();
   var storedPair = this.data[modelIndex][1];
 //  console.log('// storedPair\n' + JSON.stringify(storedPair,null,2));
-  for (i = 0; i < storedPair.length; i++) {
+  for (var i = 0; i < storedPair.length; i++) {
     var doIt = true;
     for (var prop in filter) {
       if (filter.hasOwnProperty(prop)) {
@@ -1885,14 +1831,77 @@ MemoryStore.prototype.getList = function (list, filter, arg3, arg4) {
 //  console.log(JSON.stringify(list,null,2));
   callBack(list);
 };
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-store-remote/lib/tgi-store-remote.source.js
- */
-
+;
 /**
- * Constructor
+ * tequila
+ * mongo-store
  */
+
+// Constructor
+var MongoStore = function (args) {
+  if (false === (this instanceof MongoStore)) throw new Error('new operator required');
+  args = args || {};
+  this.storeType = args.storeType || "MongoStore";
+  this.name = args.name || 'a ' + this.storeType;
+
+  this.storeProperty = {
+    isReady: false,
+    canGetModel: T.isServer(),
+    canPutModel: T.isServer(),
+    canDeleteModel: T.isServer(),
+    canGetList: T.isServer()
+  };
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
+  var errorList = [];
+  for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
+  if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
+};
+MongoStore.prototype = T.inheritPrototype(Store.prototype);
+// Methods
+
+// See mongo-store-model-server... stub for client here
+MongoStore.prototype.onConnect = function (location, callBack) {
+  if (typeof location != 'string') throw new Error('argument must a url string');
+  if (typeof callBack != 'function') throw new Error('argument must a callback');
+  callBack(this, Error('mongoStore unavailable in client'));
+};
+;
+/**
+ * tequila
+ * json-file-store
+ */
+
+// Constructor
+var JSONFileStore = function (args) {
+  if (false === (this instanceof JSONFileStore)) throw new Error('new operator required');
+  args = args || {};
+  this.storeType = args.storeType || "JSONFileStore";
+  this.name = args.name || 'a ' + this.storeType;
+
+  this.storeProperty = {
+    isReady: T.isServer(),
+    canGetModel: T.isServer(),
+    canPutModel: T.isServer(),
+    canDeleteModel: T.isServer(),
+    canGetList: T.isServer()
+  };
+  this.data = [];// Each ele is an array of model types and contents (which is an array of IDs and Model Value Store)
+  this.idCounter = 0;
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
+  var errorList = [];
+  for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
+  if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
+};
+JSONFileStore.prototype = T.inheritPrototype(Store.prototype);
+// Methods
+;
+/**
+ * tequila
+ * remote-store
+ */
+// Constructor
 var RemoteStore = function (args) {
   if (false === (this instanceof RemoteStore)) throw new Error('new operator required');
   args = args || {};
@@ -1905,17 +1914,17 @@ var RemoteStore = function (args) {
     canDeleteModel: true,
     canGetList: true
   };
-  var unusedProperties = getInvalidProperties(args, ['name', 'storeType']);
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
   var errorList = [];
   for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
   if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
 };
-RemoteStore.prototype = Object.create(Store.prototype);
-/**
- * Methods
- */
-RemoteStore.prototype.onConnect = function (location, callBack, options) {
+/* istanbul ignore next */
+RemoteStore.prototype = T.inheritPrototype(Store.prototype);
+// Methods
+/* istanbul ignore next */
+RemoteStore.prototype.onConnect = function (location, callBack) {
   if (typeof location != 'string') throw new Error('argument must a url string');
   if (typeof callBack != 'function') throw new Error('argument must a callback');
   var store = this;
@@ -1940,29 +1949,740 @@ RemoteStore.prototype.onConnect = function (location, callBack, options) {
     callBack(undefined, err);
   }
 };
-RemoteStore.prototype.getModel = function (model, callBack) {
-  throw new Error(this.storeType + ' does not provide getModel');
-};
+/* istanbul ignore next */
 RemoteStore.prototype.putModel = function (model, callBack) {
-  throw new Error('Store does not provide putModel');
-};
-RemoteStore.prototype.deleteModel = function (model, callBack) {
-  throw new Error('Store does not provide deleteModel');
-};
-RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
-  throw new Error('Store does not provide getList');
-};
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/misc/lib-footer
- **/
-  /* istanbul ignore next */
-  if (typeof exports !== 'undefined') {
-    if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = REMOTE_STORE;
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('PutModel', model), function (msg) {
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(model);
+    } else if (msg.type == 'PutModelAck') {
+      var c = msg.contents;
+      model.attributes = [];
+      for (var a in c.attributes) {
+        if (c.attributes.hasOwnProperty(a)) {
+          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+          attrib.value = c.attributes[a].value;
+          model.attributes.push(attrib);
+        }
+      }
+      if (typeof c == 'string')
+        callBack(model, c);
+      else
+        callBack(model);
+    } else {
+      callBack(model, Error(msg));
     }
-    exports.REMOTE_STORE = REMOTE_STORE;
+  });
+};
+/* istanbul ignore next */
+RemoteStore.prototype.getModel = function (model, callBack) {
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (!model.attributes[0].value) throw new Error('ID not set');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('GetModel', model), function (msg) {
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(model);
+    } else if (msg.type == 'GetModelAck') {
+      var c = msg.contents;
+      model.attributes = [];
+      for (var a in c.attributes) {
+        if (c.attributes.hasOwnProperty(a)) {
+          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+          attrib.value = c.attributes[a].value;
+          model.attributes.push(attrib);
+        }
+      }
+      if (typeof c == 'string')
+        callBack(model, c);
+      else
+        callBack(model);
+    } else {
+      callBack(model, Error(msg));
+    }
+  });
+};
+/* istanbul ignore next */
+RemoteStore.prototype.deleteModel = function (model, callBack) {
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('DeleteModel', model), function (msg) {
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(model);
+    } else if (msg.type == 'DeleteModelAck') {
+      var c = msg.contents;
+      model.attributes = [];
+      for (var a in c.attributes) {
+        if (c.attributes.hasOwnProperty(a)) {
+          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+          attrib.value = c.attributes[a].value;
+          model.attributes.push(attrib);
+        }
+      }
+      if (typeof c == 'string')
+        callBack(model, c);
+      else
+        callBack(model);
+    } else {
+      callBack(model, Error(msg));
+    }
+  });
+};
+/* istanbul ignore next */
+RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
+  var callBack, order;
+  if (typeof(arg4) == 'function') {
+    callBack = arg4;
+    order = arg3;
   } else {
-    root.REMOTE_STORE = REMOTE_STORE;
+    callBack = arg3;
   }
-}).call(this);
+  if (!(list instanceof List)) throw new Error('argument must be a List');
+  if (!(filter instanceof Object)) throw new Error('filter argument must be Object');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('GetList', {list: list, filter: filter, order: order}), function (msg) {
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(list);
+    } else if (msg.type == 'GetListAck') {
+      list._items = msg.contents._items;
+      list._itemIndex = msg.contents._itemIndex;
+      callBack(list);
+    } else {
+      callBack(list, Error(msg));
+    }
+  });
+
+};
+// Message Handlers
+/* istanbul ignore next */
+T.setMessageHandler('PutModel', function putModelMessageHandler(messageContents, fn) {
+  // create proxy for client model
+  var ProxyPutModel = function (args) {
+    Model.call(this, args);
+    this.modelType = messageContents.modelType;
+    this.attributes = [];
+    for (var a in messageContents.attributes) {
+      var attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
+      if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
+        if (attrib.value != messageContents.attributes[a].value)
+          attrib.value = messageContents.attributes[a].value;
+      } else {
+        attrib.value = messageContents.attributes[a].value;
+      }
+      this.attributes.push(attrib);
+    }
+  };
+  ProxyPutModel.prototype = T.inheritPrototype(Model.prototype); // Todo this is not a real class object may need to make factory builder
+  var pm = new ProxyPutModel();
+  var msg;
+  hostStore.putModel(pm, function (model, error) {
+    if (typeof error == 'undefined') {
+      msg = new Message('PutModelAck', model);
+    } else {
+      console.log('ERROR: ' + error + "");
+      msg = new Message('PutModelAck', error + "");
+    }
+    fn(msg);
+  }, this);
+});
+/* istanbul ignore next */
+T.setMessageHandler('GetModel', function getModelMessageHandler(messageContents, fn) {
+  // create proxy for client model
+  var ProxyGetModel = function (args) {
+    Model.call(this, args);
+    this.modelType = messageContents.modelType;
+    this.attributes = [];
+    for (var a in messageContents.attributes) {
+      var attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
+      if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
+        attrib.value = messageContents.attributes[a].value;
+      } else {
+        attrib.value = messageContents.attributes[a].value;
+      }
+      this.attributes.push(attrib);
+    }
+  };
+  ProxyGetModel.prototype = T.inheritPrototype(Model.prototype);
+  var pm = new ProxyGetModel();
+  var msg;
+  hostStore.getModel(pm, function (model, error) {
+    if (typeof error == 'undefined') {
+      msg = new Message('GetModelAck', model);
+    } else {
+      msg = new Message('GetModelAck', error + "");
+    }
+    fn(msg);
+  }, this);
+});
+/* istanbul ignore next */
+T.setMessageHandler('DeleteModel', function deleteModelMessageHandler(messageContents, fn) {
+  // create proxy for client model
+  var ProxyDeleteModel = function (args) {
+    Model.call(this, args);
+    this.modelType = messageContents.modelType;
+    this.attributes = [];
+    for (var a in messageContents.attributes) {
+      var attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
+      if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
+        attrib.value = messageContents.attributes[a].value;
+      } else {
+        attrib.value = messageContents.attributes[a].value;
+      }
+      this.attributes.push(attrib);
+    }
+  };
+  ProxyDeleteModel.prototype = T.inheritPrototype(Model.prototype);
+  var pm = new ProxyDeleteModel();
+  var msg;
+  hostStore.deleteModel(pm, function (model, error) {
+    if (typeof error == 'undefined')
+      msg = new Message('DeleteModelAck', model);
+    else
+      msg = new Message('DeleteModelAck', error);
+    fn(msg);
+  }, this);
+});
+/* istanbul ignore next */
+T.setMessageHandler('GetList', function getListMessageHandler(messageContents, fn) {
+  var proxyList = new List(new Model());
+  proxyList.model.modelType = messageContents.list.model.modelType;
+  proxyList.model.attributes = messageContents.list.model.attributes;
+  var msg;
+  function messageCallback(list, error) {
+    if (typeof error == 'undefined')
+      msg = new Message('GetListAck', list);
+    else
+      msg = new Message('GetListAck', error);
+    fn(msg);
+  }
+  if (messageContents.order) {
+    hostStore.getList(proxyList, messageContents.filter, messageContents.order, messageCallback);
+  } else {
+    hostStore.getList(proxyList, messageContents.filter, messageCallback);
+  }
+});
+;
+/**
+ * tequila
+ * local-store
+ */
+// Constructor
+var LocalStore = function (args) {
+  if (false === (this instanceof LocalStore)) throw new Error('new operator required');
+  args = args || {};
+  this.storeType = args.storeType || "LocalStore";
+  this.name = args.name || 'a ' + this.storeType;
+  var gotStore = typeof(Storage) !== "undefined";
+  this.storeProperty = {
+    isReady: gotStore,
+    canGetModel: gotStore,
+    canPutModel: gotStore,
+    canDeleteModel: gotStore,
+    canGetList: gotStore
+  };
+  this.data = [];// Each ele is an array of model types and contents (which is an array of IDs and Model Value Store)
+  this.idCounter = 0;
+  if (gotStore) {
+    localStorage.tequilaData = localStorage.tequilaData || [];
+    localStorage.tequilaIDCounter = localStorage.tequilaIDCounter  || 0;
+    if (localStorage.tequilaData) this.data = JSON.parse(localStorage.tequilaData);
+    if (localStorage.tequilaIDCounter) this.idCounter = localStorage.tequilaIDCounter;
+  }
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
+  var errorList = [];
+  for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
+  if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
+};
+LocalStore.prototype = T.inheritPrototype(Store.prototype);
+// Methods
+;
+/**
+ * tequila
+ * redis-store
+ */
+// Constructor
+var RedisStore = function (args) {
+  if (false === (this instanceof RedisStore)) throw new Error('new operator required');
+  args = args || {};
+  this.storeType = args.storeType || "RedisStore";
+  this.name = args.name || 'a ' + this.storeType;
+  this.storeProperty = {
+    isReady: false,
+    canGetModel: false,
+    canPutModel: false,
+    canDeleteModel: false,
+    canGetList: false
+  };
+  this.data = [];// Each ele is an array of model types and contents (which is an array of IDs and Model Value Store)
+  this.idCounter = 0;
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'storeType']);
+  var errorList = [];
+  for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
+  if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
+};
+RedisStore.prototype = T.inheritPrototype(Store.prototype);
+// Methods
+;
+/**
+ * tequila
+ * bootstrap3-interface
+ */
+function Bootstrap3PanelInterface(args) {
+  if (false === (this instanceof Bootstrap3PanelInterface)) throw new Error('new operator required');
+  args = args || {};
+  args.name = args.name || '(unnamed)';
+  args.description = args.description || 'a Interface';
+  var i;
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'description']);
+  var errorList = [];
+  for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1)
+    throw new Error('error creating Procedure: multiple errors');
+  if (errorList.length) throw new Error('error creating Procedure: ' + errorList[0]);
+  // default state
+  this.startCallback = null;
+  this.stopCallback = null;
+  this.mocks = [];
+  this.mockPending = false;
+  // args ok, now copy to object
+  for (i in args) this[i] = args[i];
+}
+Bootstrap3PanelInterface.prototype = T.inheritPrototype(Interface.prototype);
+/*
+* Methods
+*/
+// See bootstrap3-panels-interface-client... stub for server here
+Bootstrap3PanelInterface.prototype.start = function (application, presentation, callBack) {
+  if (!(application instanceof Application)) throw new Error('Application required');
+  if (!(presentation instanceof Presentation)) throw new Error('presentation required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  throw new Error('Bootstrap3PanelInterface unavailable in server');
+};;
+/**
+ * tequila
+ * framework7-interface
+ */
+function Framework7Interface(args) {
+  if (false === (this instanceof Framework7Interface)) throw new Error('new operator required');
+  args = args || {};
+  args.name = args.name || '(unnamed)';
+  args.description = args.description || 'a Interface';
+  var i;
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'description']);
+  var errorList = [];
+  for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1)
+    throw new Error('error creating Procedure: multiple errors');
+  if (errorList.length) throw new Error('error creating Procedure: ' + errorList[0]);
+  // default state
+  this.startCallback = null;
+  this.stopCallback = null;
+  this.mocks = [];
+  this.mockPending = false;
+  // args ok, now copy to object
+  for (i in args) this[i] = args[i];
+}
+Framework7Interface.prototype = T.inheritPrototype(Interface.prototype);
+/*
+ * Methods
+ */
+// See bootstrap3-panels-interface-client... stub for server here
+Framework7Interface.prototype.start = function (application, presentation, callBack) {
+  if (!(application instanceof Application)) throw new Error('Application required');
+  if (!(presentation instanceof Presentation)) throw new Error('presentation required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  throw new Error('Framework7Interface unavailable in server');
+};;
+/**
+ * tequila
+ * command-line-interface
+ */
+;
+/**
+ * tequila
+ * mock-interface.js
+ */
+function MockInterface(args) {
+  if (false === (this instanceof MockInterface)) throw new Error('new operator required');
+  args = args || {};
+  args.name = args.name || '(unnamed)';
+  args.description = args.description || 'a Interface';
+  var i;
+  var unusedProperties = T.getInvalidProperties(args, ['name', 'description']);
+  var errorList = [];
+  for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1)
+    throw new Error('error creating Procedure: multiple errors');
+  if (errorList.length) throw new Error('error creating Procedure: ' + errorList[0]);
+  // default state
+  this.startCallback = null;
+  this.stopCallback = null;
+  this.mocks = [];
+  this.mockPending = false;
+  // args ok, now copy to object
+  for (i in args) this[i] = args[i];
+}
+MockInterface.prototype = T.inheritPrototype(Interface.prototype);
+/*
+ * Methods
+ */
+MockInterface.prototype.canMock = function () {
+  return true;
+};
+;
+/**
+ * tequila
+ * mongo-store-server
+ *
+ * MongoDB goodies
+ *
+ * db.testData.find() // return cursor with all docs in testData collection
+ * db.testData.find( { x : 18 } ) // cursor with all docs where x = 18
+ * db.testData.find().limit(3) // limit cursor
+ * db.testData.findOne() // return document not cursor
+ *
+ *
+ */
+
+// Methods (Server Side Only)
+/* istanbul ignore next */
+MongoStore.prototype.onConnect = function (location, callBack) {
+  if (typeof location != 'string') throw new Error('argument must a url string');
+  if (typeof callBack != 'function') throw new Error('argument must a callback');
+
+  // Open mongo database
+  var store = this;
+  try {
+    this.mongoServer = new mongo.Server('127.0.0.1', 27017, {auto_reconnect: true});
+    this.mongoDatabase = new mongo.Db('tequilaStore', this.mongoServer, {safe: true});
+    this.mongoDatabaseOpened = false;
+    this.mongoDatabase.open(function (err, db) {
+      if (err) {
+        callBack(store, err);
+        try {
+          store.mongoDatabase.close();  // Error will retry till close with auto_reconnect: true
+        }
+        catch (err) {
+          console.log('error closing when fail open: ' + err);
+        }
+      } else {
+        store.mongoDatabaseOpened = true;
+        store.storeProperty.isReady = true;
+        store.storeProperty.canGetModel = true;
+        store.storeProperty.canPutModel = true;
+        store.storeProperty.canDeleteModel = true;
+        callBack(store);
+      }
+    });
+  }
+  catch (err) {
+    callBack(store, err);
+  }
+
+};
+/* istanbul ignore next */
+MongoStore.prototype.putModel = function (model, callBack) {
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  var store = this;
+  var a;
+  store.mongoDatabase.collection(model.modelType, function (err, collection) {
+    if (err) {
+      console.log('putModel collection error: ' + err);
+      callBack(model, err);
+      return;
+    }
+    // put name value pairs into modelData
+    var modelData = {};
+    var newModel = false;
+    var id = model.attributes[0].value;
+    for (a in model.attributes) {
+      if (model.attributes.hasOwnProperty(a)) {
+        if (model.attributes[a].name == 'id') {
+          if (!model.attributes[a].value)
+            newModel = true;
+        } else {
+          if (model.attributes[a].value && model.attributes[a].type == 'ID') {
+            modelData[model.attributes[a].name] = mongo.ObjectID.createFromHexString(model.attributes[a].value);
+          } else {
+            modelData[model.attributes[a].name] = model.attributes[a].value;
+          }
+        }
+      }
+    }
+    if (newModel) {
+//      console.log('collection.insert (modelData): ' + JSON.stringify(modelData));
+      collection.insert(modelData, {safe: true}, function (err, result) {
+        if (err) {
+          console.log('putModel insert error: ' + err);
+          callBack(model, err);
+        } else {
+          // Get resulting data
+          for (a in model.attributes) {
+            if (model.attributes.hasOwnProperty(a)) {
+              if (model.attributes[a].name == 'id')
+                model.attributes[a].value = modelData['_id'].toString();
+              else if (modelData[model.attributes[a].name] && model.attributes[a].type == 'ID')
+                model.attributes[a].value = (modelData[model.attributes[a].name]).toString();
+              else
+                model.attributes[a].value = modelData[model.attributes[a].name];
+            }
+          }
+          callBack(model);
+        }
+      });
+    } else {
+      id = mongo.ObjectID.createFromHexString(id);
+      collection.update({'_id': id}, modelData, {safe: true}, function (err, result) {
+        if (err) {
+          console.log('putModel update error: ' + err);
+          callBack(model, err);
+        } else {
+          // Get resulting data
+          for (a in model.attributes) {
+            if (model.attributes.hasOwnProperty(a)) {
+              if (model.attributes[a].name != 'id') // Keep original ID intact
+                model.attributes[a].value = modelData[model.attributes[a].name];
+            }
+          }
+          callBack(model);
+        }
+      });
+    }
+  });
+};
+/* istanbul ignore next */
+MongoStore.prototype.getModel = function (model, callBack) {
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (!model.attributes[0].value) throw new Error('ID not set');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  var store = this;
+  var a;
+  var id = model.attributes[0].value;
+  try {
+    id = mongo.ObjectID.createFromHexString(id);
+  } catch (e) {
+    console.log('getModel createFromHexString error: ' + e);
+    callBack(model, e);
+  }
+  store.mongoDatabase.collection(model.modelType, function (err, collection) {
+    if (err) {
+      console.log('getModel collection error: ' + err);
+      callBack(model, err);
+      return;
+    }
+    collection.findOne({'_id': id}, function (err, item) {
+      if (err) {
+        console.log('getModel findOne ERROR: ' + err);
+        callBack(model, err);
+        return;
+      }
+      if (item == null) {
+        callBack(model, Error('id not found in store'));
+      } else {
+        for (a in model.attributes) {
+          if (model.attributes.hasOwnProperty(a)) {
+            if (model.attributes[a].name == 'id')
+              model.attributes[a].value = item['_id'].toString();
+            else if (item[model.attributes[a].name] && model.attributes[a].type == 'ID')
+              model.attributes[a].value = (item[model.attributes[a].name]).toString();
+            else
+              model.attributes[a].value = item[model.attributes[a].name];
+          }
+        }
+        callBack(model);
+      }
+    });
+  });
+};
+/* istanbul ignore next */
+MongoStore.prototype.deleteModel = function (model, callBack) {
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  var store = this;
+  var a;
+  var id = model.attributes[0].value;
+  id = mongo.ObjectID.createFromHexString(id);
+  store.mongoDatabase.collection(model.modelType, function (err, collection) {
+    if (err) {
+      console.log('deleteModel collection error: ' + err);
+      callBack(model, err);
+      return;
+    }
+    collection.remove({'_id': id}, function (err, item) {
+      if (err || item != 1) {
+        if (!err) err = 'error deleting: item is not equal to 1';
+        console.log('deleteModel remove ERROR: ' + err);
+        callBack(model, err);
+        return;
+      }
+      for (a in model.attributes) {
+        if (model.attributes.hasOwnProperty(a)) {
+          if (model.attributes[a].name == 'id')
+            model.attributes[a].value = null;
+        }
+      }
+      callBack(model);
+    });
+  });
+};
+/* istanbul ignore next */
+MongoStore.prototype.getList = function (list, filter, arg3, arg4) {
+  var callBack, order;
+  if (typeof(arg4) == 'function') {
+    callBack = arg4;
+    order = arg3;
+  } else {
+    callBack = arg3;
+  }
+  if (!(list instanceof List)) throw new Error('argument must be a List');
+  if (!(filter instanceof Object)) throw new Error('filter argument must be Object');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  var store = this;
+  list.clear();
+
+  // Convert list filter to mongo flavor
+  var mongoFilter = {};
+  for (var prop in filter) {
+    if (filter.hasOwnProperty(prop)) {
+//      console.log('prop = ' + prop);
+      if (list.model.getAttributeType(prop) == 'ID')
+        mongoFilter[prop] = mongo.ObjectID.createFromHexString(filter[prop]);
+      else
+        mongoFilter[prop] = filter[prop];
+    }
+  }
+
+  store.mongoDatabase.collection(list.model.modelType, function (err, collection) {
+    if (err) {
+      console.log('getList collection error: ' + err);
+      callBack(list, err);
+      return;
+    }
+    if (order) {
+      collection.find({ query: mongoFilter, $orderby: order}, findCallback);
+    } else {
+      collection.find(mongoFilter, findCallback);
+    }
+    function findCallback(err, cursor) {
+      if (err) {
+        console.log('getList find error: ' + err);
+        callBack(list, err);
+        return;
+      }
+      cursor.toArray(function (err, documents) {
+        if (err) {
+          console.log('getList toArray error: ' + err);
+          callBack(list, err);
+          return;
+        }
+        for (var i = 0; i < documents.length; i++) {
+          documents[i].id = documents[i]._id.toString();
+          delete documents[i]._id;
+          var dataPart = [];
+          dataPart.push(documents[i].id);
+          for (var j in documents[i]) {
+            if (j != 'id')
+              dataPart.push(documents[i][j]);
+          }
+          list._items.push(dataPart);
+        }
+        list._itemIndex = list._items.length - 1;
+        callBack(list);
+      });
+    }
+  });
+};
+;
+/*
+ * tequila
+ * test-runner-node-server
+ */
+
+// Initialize connect
+var connect = require('connect');
+var app = connect();
+app.use(connect.static('..'));
+app.use(connect.directory('..', {icons: true}));
+
+//app.use('/js/lib/', connect.static('node_modules/requirejs/'));
+//app.use('/node_modules', connect.static('node_modules'));
+// Get IP Address
+
+var os = require('os');
+var interfaces = os.networkInterfaces();
+var addresses = [];
+for (k in interfaces) {
+  for (k2 in interfaces[k]) {
+    var address = interfaces[k][k2];
+    if (address.family == 'IPv4' && !address.internal) {
+      addresses.push(address.address)
+    }
+  }
+}
+
+// Start up HTTP server (http)
+var version = "0.1";
+var ServerName = "Test";
+var IP = addresses[0];
+var Port = 8080;
+var http = require('http').createServer(app);
+var server = http.listen(Port, function () {
+  console.log(ServerName + '\nVersion ' + version + '\nAddress: http://' + IP + ':' + Port);
+});
+
+// Start up Socket Server (io)
+var Connections = []; // Array of connections
+var io = require('socket.io').listen(server);
+
+console.log(JSON.stringify(T.getVersion()))
+
+// try to create a mongoStore
+var mongo = require('mongodb');
+var hostStore = new MemoryStore({name: 'Host Test Store'}); // start hoststore with memory
+var mongoStore = new MongoStore({name: 'Host Test Store'});
+mongoStore.onConnect('http://localhost', function (store, err) {
+  if (err) {
+    console.warn('mongoStore unavailable (' + err + ')');
+  } else {
+    console.log('mongoStore connected');
+    hostStore = mongoStore; // use mongoDB for hostStore
+  }
+  console.log(hostStore.name + ' ' + hostStore.storeType);
+
+});
+
+//io.set('log level', 1);
+io.set('log', false);
+io.on('connection', function (socket) {
+  console.log('socket.io connection: ' + socket.id);
+  socket.on('ackmessage', T.hostMessageProcess);
+  socket.on('message', function (obj) {
+    console.log('message socket.io message: ' + obj);
+  });
+  socket.on('disconnect', function (reason) {
+    console.log('message socket.io disconnect: ' + reason);
+  });
+});
+
+io.of('hostStore').on('connection', function (socket) {
+  console.log('hostStore socket.io connection: ' + socket.id);
+  socket.on('ackmessage', function (obj, fn) {
+    console.log('hostStore socket.io ackmessage: ' + obj);
+    fn('Ack');
+  });
+  socket.on('message', function (obj) {
+    console.log('hostStore socket.io message: ' + obj);
+  });
+  socket.on('disconnect', function (reason) {
+    console.log('hostStore socket.io disconnect: ' + reason);
+  });
+});

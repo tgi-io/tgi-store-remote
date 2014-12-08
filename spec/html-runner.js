@@ -9,7 +9,7 @@ var spec = new Spec();
   testSpec(spec, CORE);
   log('Connecting to host...');
   var hostStore = new RemoteStore({name: 'Host Test Store'});
-  hostStore.onConnect('fuckstick http://localhost', function (store, err) {
+  hostStore.onConnect('http://localhost:8080', function (store, err) {
     if (err) {
       logError('hostStore unavailable (' + err + ')');
     } else {
@@ -36,6 +36,7 @@ var spec = new Spec();
    * DOM rendering functions
    */
   function log(txt) {
+    if (txt.indexOf("(MUTED)") > -1) return;
     var p = document.createElement("p");
     p.style.margin = '2px';
     p.style.padding = '1px';
