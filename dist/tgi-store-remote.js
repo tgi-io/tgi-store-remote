@@ -1910,6 +1910,14 @@ var RemoteStore = function (args) {
   for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
   if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
+
+  // if already connected reuse but ... todo is this good code ???
+
+  if (RemoteStore.transport) {
+    this.storeProperty.isReady = true;
+    this.transport = RemoteStore.transport;
+  }
+
 };
 RemoteStore.prototype = Object.create(Store.prototype);
 /**
@@ -1920,7 +1928,7 @@ RemoteStore.prototype.onConnect = function (location, callBack, options) {
   if (typeof callBack != 'function') throw new Error('argument must a callback');
   var store = this;
   try {
-    this.transport = new Transport(location, function (msg) {
+    store.transport = new Transport(location, function (msg) {
       if (msg.type == 'Error') {
         console.log('Transport connect error: ' + store.name);
         callBack(undefined, new Error(msg.contents));
@@ -1929,6 +1937,7 @@ RemoteStore.prototype.onConnect = function (location, callBack, options) {
       if (msg.type == 'Connected') {
         console.log('Transport connected: ' + store.name);
         store.storeProperty.isReady = true;
+        RemoteStore.transport = store.transport; // todo a static connection not well designed
         callBack(store);
         return;
       }
@@ -1941,16 +1950,112 @@ RemoteStore.prototype.onConnect = function (location, callBack, options) {
   }
 };
 RemoteStore.prototype.getModel = function (model, callBack) {
-  throw new Error(this.storeType + ' does not provide getModel');
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (!model.attributes[0].value) throw new Error('ID not set');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('GetModel', model), function (msg) {
+    console.log('GetModel callback');
+    if (true) return; // jshint ignore:line
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(model);
+    } else if (msg.type == 'GetModelAck') {
+      var c = msg.contents;
+      model.attributes = [];
+      for (var a in c.attributes) {
+        if (c.attributes.hasOwnProperty(a)) {
+          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+          attrib.value = c.attributes[a].value;
+          model.attributes.push(attrib);
+        }
+      }
+      if (typeof c == 'string')
+        callBack(model, c);
+      else
+        callBack(model);
+    } else {
+      callBack(model, Error(msg));
+    }
+  });
 };
 RemoteStore.prototype.putModel = function (model, callBack) {
-  throw new Error('Store does not provide putModel');
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('PutModel', model), function (msg) {
+    console.log('PutModel callback');
+    if (true) return; // jshint ignore:line
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(model);
+    } else if (msg.type == 'PutModelAck') {
+      var c = msg.contents;
+      model.attributes = [];
+      for (var a in c.attributes) {
+        if (c.attributes.hasOwnProperty(a)) {
+          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+          attrib.value = c.attributes[a].value;
+          model.attributes.push(attrib);
+        }
+      }
+      if (typeof c == 'string')
+        callBack(model, c);
+      else
+        callBack(model);
+    } else {
+      callBack(model, Error(msg));
+    }
+  });
 };
 RemoteStore.prototype.deleteModel = function (model, callBack) {
-  throw new Error('Store does not provide deleteModel');
+  if (!(model instanceof Model)) throw new Error('argument must be a Model');
+  if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('DeleteModel', model), function (msg) {
+    console.log('DeleteModel callback');
+    if (true) return; // jshint ignore:line
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(model);
+    } else if (msg.type == 'DeleteModelAck') {
+      var c = msg.contents;
+      model.attributes = [];
+      for (var a in c.attributes) {
+        if (c.attributes.hasOwnProperty(a)) {
+          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+          attrib.value = c.attributes[a].value;
+          model.attributes.push(attrib);
+        }
+      }
+      if (typeof c == 'string')
+        callBack(model, c);
+      else
+        callBack(model);
+    } else {
+      callBack(model, Error(msg));
+    }
+  });
 };
 RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
-  throw new Error('Store does not provide getList');
+  var callBack, order;
+  if (typeof(arg4) == 'function') {
+    callBack = arg4;
+    order = arg3;
+  } else {
+    callBack = arg3;
+  }
+  if (!(list instanceof List)) throw new Error('argument must be a List');
+  if (!(filter instanceof Object)) throw new Error('filter argument must be Object');
+  if (typeof callBack != "function") throw new Error('callBack required');
+  this.transport.send(new Message('GetList', {list: list, filter: filter, order: order}), function (msg) {
+    if (false && msg == 'Ack') { // todo wtf is this
+      callBack(list);
+    } else if (msg.type == 'GetListAck') {
+      list._items = msg.contents._items;
+      list._itemIndex = msg.contents._itemIndex;
+      callBack(list);
+    } else {
+      callBack(list, Error(msg));
+    }
+  });
 };
 
 /**---------------------------------------------------------------------------------------------------------------------
