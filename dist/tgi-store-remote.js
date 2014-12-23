@@ -1956,7 +1956,6 @@ RemoteStore.prototype.getModel = function (model, callBack) {
   if (typeof callBack != "function") throw new Error('callBack required');
   this.transport.send(new Message('GetModel', model), function (msg) {
     console.log('GetModel callback');
-    if (true) return; // jshint ignore:line
     if (false && msg == 'Ack') { // todo wtf is this
       callBack(model);
     } else if (msg.type == 'GetModelAck') {
@@ -1984,7 +1983,6 @@ RemoteStore.prototype.putModel = function (model, callBack) {
   if (typeof callBack != "function") throw new Error('callBack required');
   this.transport.send(new Message('PutModel', model), function (msg) {
     console.log('PutModel callback');
-    if (true) return; // jshint ignore:line
     if (false && msg == 'Ack') { // todo wtf is this
       callBack(model);
     } else if (msg.type == 'PutModelAck') {
@@ -2012,7 +2010,6 @@ RemoteStore.prototype.deleteModel = function (model, callBack) {
   if (typeof callBack != "function") throw new Error('callBack required');
   this.transport.send(new Message('DeleteModel', model), function (msg) {
     console.log('DeleteModel callback');
-    if (true) return; // jshint ignore:line
     if (false && msg == 'Ack') { // todo wtf is this
       callBack(model);
     } else if (msg.type == 'DeleteModelAck') {

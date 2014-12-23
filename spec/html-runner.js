@@ -1,7 +1,7 @@
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-spec/spec/html-runner.js
  **/
-var spec = new Spec();
+var spec = new Spec({timeOut:500});
 (function () {
   var CORE = REMOTE_STORE;
   UTILITY().injectMethods(this);
@@ -16,17 +16,21 @@ var spec = new Spec();
       log('hostStore connected');
       spec.runTests(function (msg) {
         /**
-         * msg callback events msg.error, msg.log, msg.done
+         * msg callback events msg.eror, msg.log, msg.done
          */
         if (msg.error) {
           logError(msg.error);
         } else if (msg.done) {
           if (msg.testsFailed || msg.testsPending)
-            logError(msg.testsCreated + ' Tests attempted with ' + msg.testsFailed + ' errors');
+            if (msg.testsPending)
+              logError(msg.testsCreated + ' tests attempted with ' + msg.testsFailed + ' errors, ' +
+              msg.testsPending + ' tests timed out');
+            else
+              logError(msg.testsCreated + ' tests attempted with ' + msg.testsFailed + ' errors');
           else
-            logSuccess(msg.testsCreated + ' Tests completed with no errors');
+            logSuccess(msg.testsCreated + ' tests completed with no errors');
         } else if (msg.log) {
-          log(msg.log);
+          //log(msg.log);
         }
       });
     }
@@ -36,7 +40,7 @@ var spec = new Spec();
    * DOM rendering functions
    */
   function log(txt) {
-    if (txt.indexOf("(MUTED)") > -1) return;
+    if (left(txt, 5) == 'MUTE ' || txt.indexOf("(MUTED)") > -1) return;
     var p = document.createElement("p");
     p.style.margin = '2px';
     p.style.padding = '1px';
@@ -48,6 +52,7 @@ var spec = new Spec();
     p.appendChild(document.createTextNode(txt));
     document.body.appendChild(p);
   }
+
   function logError(txt) {
     var p = document.createElement("p");
     p.style.fontWeight = "bold";
@@ -60,6 +65,7 @@ var spec = new Spec();
     p.appendChild(document.createTextNode(txt));
     document.body.appendChild(p);
   }
+
   function logSuccess(txt) {
     var p = document.createElement("p");
     p.style.fontWeight = "bold";

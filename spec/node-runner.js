@@ -1,41 +1,36 @@
 /**---------------------------------------------------------------------------------------------------------------------
- * tgi-spec/spec/node-runner.js
+ * tgi-store-remote/spec/node-runner.js
  */
-var Spec = require('tgi-spec/dist/tgi.spec.js');
-var testSpec = require('../dist/tgi-store-remote.spec.js');
-var spec = new Spec();
-var UTILITY = require('tgi-utility/dist/tgi.utility');
-var CORE = require('../dist/tgi-store-remote.js');
 
-(function () {
-  UTILITY().injectMethods(this);
-  CORE().injectMethods(this);
-  testSpec(spec, CORE);
-  var hostStore = new RemoteStore({name: 'Host Test Store'});
-  hostStore.onConnect('http://localhost', function (store, err) {
-    if (err) {
-      console.log('hostStore unavailable (' + err + ')');
-      process.exit(1);
-    } else {
-      console.log('hostStore connected');
-      spec.runTests(function (msg) {
-        if (msg.error) {
-          console.log('UT OH: ' + msg.error);
-          process.exit(1);
-        } else if (msg.done) {
-          console.log('Testing completed with  ...');
-          console.log('testsCreated = ' + msg.testsCreated);
-          console.log('testsPending = ' + msg.testsPending);
-          console.log('testsFailed = ' + msg.testsFailed);
-          if (msg.testsFailed || msg.testsPending)
-            process.exit(1);
-          else
-            process.exit(0);
-        } else if (msg.log) {
-          console.log(msg.log);
-        }
-      });
+// Initialize connect
+var connect = require('connect');
+var app = connect();
+app.use(connect.static('.'));
+app.use(connect.directory('.', {icons: true}));
+
+var os = require('os');
+var interfaces = os.networkInterfaces();
+var addresses = [];
+var k,k2;
+for (k in interfaces) {
+  for (k2 in interfaces[k]) {
+    var address = interfaces[k][k2];
+    if (address.family == 'IPv4' && !address.internal) {
+      addresses.push(address.address)
     }
-    console.log(hostStore.name + ' ' + hostStore.storeType);
-  }, {vendor: null, keepConnection: true});
-}());
+  }
+}
+
+// Start up HTTP server (http)
+var IP = addresses[0];
+var Port = 8080;
+var http = require('http').createServer(app);
+var server = http.listen(Port, function () {
+  console.log('Paste this in your browser and smoke it:\n' +
+  'http://' + IP + ':' + Port + '/spec/html-runner.html');
+});
+
+
+// Start up Socket Server (io)
+var Connections = []; // Array of connections
+var io = require('socket.io').listen(server);
