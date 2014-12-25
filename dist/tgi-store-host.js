@@ -1905,7 +1905,7 @@ MemoryStore.prototype.getList = function (list, filter, arg3, arg4) {
  * tgi-store-remote/lib/tgi-store-host.source.js
  */
 
-Transport.setMessageHandler('PutModel', function putModelMessageHandler(messageContents, fn) {
+Transport.setMessageHandler('PutModel', function (messageContents, fn) {
   console.log('PutModel here');
 
   // create proxy for client model
@@ -1938,7 +1938,7 @@ Transport.setMessageHandler('PutModel', function putModelMessageHandler(messageC
   }, this);
 });
 
-Transport.setMessageHandler('GetModel', function getModelMessageHandler(messageContents, fn) {
+Transport.setMessageHandler('GetModel', function (messageContents, fn) {
   console.log('GetModel here');
 
   // create proxy for client model
@@ -1969,7 +1969,7 @@ Transport.setMessageHandler('GetModel', function getModelMessageHandler(messageC
   }, this);
 });
 
-Transport.setMessageHandler('DeleteModel', function deleteModelMessageHandler(messageContents, fn) {
+Transport.setMessageHandler('DeleteModel', function (messageContents, fn) {
   console.log('DeleteModel here');
 
   // create proxy for client model
@@ -1999,12 +1999,13 @@ Transport.setMessageHandler('DeleteModel', function deleteModelMessageHandler(me
   }, this);
 });
 
-Transport.setMessageHandler('GetList', function getListMessageHandler(messageContents, fn) {
+Transport.setMessageHandler('GetList', function (messageContents, fn) {
   console.log('GetList here');
   var proxyList = new List(new Model());
   proxyList.model.modelType = messageContents.list.model.modelType;
   proxyList.model.attributes = messageContents.list.model.attributes;
   var msg;
+
   function messageCallback(list, error) {
     if (typeof error == 'undefined')
       msg = new Message('GetListAck', list);
@@ -2012,6 +2013,7 @@ Transport.setMessageHandler('GetList', function getListMessageHandler(messageCon
       msg = new Message('GetListAck', error);
     fn(msg);
   }
+
   if (messageContents.order) {
     Transport.hostStore.getList(proxyList, messageContents.filter, messageContents.order, messageCallback);
   } else {
