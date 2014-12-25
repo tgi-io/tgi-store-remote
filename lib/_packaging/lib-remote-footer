@@ -1,0 +1,13 @@
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-store-remote/lib/_packaging/lib-remote-footer
+ **/
+  /* istanbul ignore next */
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = REMOTE_STORE;
+    }
+    exports.REMOTE_STORE = REMOTE_STORE;
+  } else {
+    root.REMOTE_STORE = REMOTE_STORE;
+  }
+}).call(this);

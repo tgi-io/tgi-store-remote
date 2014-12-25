@@ -10,62 +10,100 @@ var rename = require('gulp-rename');
 var childProcess = require('child_process');
 
 // Source and _packaging
-var libFiles = [
-  'lib/_packaging/lib-header',
+var remoteLibFiles = [
+  'lib/_packaging/lib-remote-header',
   'lib/tgi-store-remote.lib.js',
   'node_modules/tgi-core/dist/tgi.core.chunk.js',
   'lib/tgi-store-remote.source.js',
-  'lib/_packaging/lib-footer'
+  'lib/_packaging/lib-remote-footer'
+];
+var hostLibFiles = [
+  'lib/_packaging/lib-host-header',
+  'lib/tgi-store-host.lib.js',
+  'node_modules/tgi-core/dist/tgi.core.chunk.js',
+  'lib/tgi-store-host.source.js',
+  'lib/_packaging/lib-host-footer'
 ];
 
 // The Spec
-var specFiles = [
+var remoteSpecFiles = [
   'lib/_packaging/spec-header',
   'node_modules/tgi-core/dist/tgi.core.spec.chunk.js',
   'lib/tgi-store-remote.spec.js',
   'lib/_packaging/spec-footer'
 ];
+var hostSpecFiles = [
+  'lib/_packaging/spec-header',
+  'node_modules/tgi-core/dist/tgi.core.spec.chunk.js',
+  'lib/tgi-store-host.spec.js',
+  'lib/_packaging/spec-footer'
+];
 
 // Build Lib
-gulp.task('_buildLib', function () {
-  return gulp.src(libFiles)
+gulp.task('_buildRemoteLib', function () {
+  return gulp.src(remoteLibFiles)
     .pipe(concat('tgi-store-remote.js'))
     .pipe(gulp.dest('dist'))
     .pipe(rename('tgi-store-remote.min.js'))
     .pipe(uglify())
     .pipe(gulp.dest('dist'));
 });
+gulp.task('_buildHostLib', function () {
+  return gulp.src(hostLibFiles)
+    .pipe(concat('tgi-store-host.js'))
+    .pipe(gulp.dest('dist'))
+    .pipe(rename('tgi-store-host.min.js'))
+    .pipe(uglify())
+    .pipe(gulp.dest('dist'));
+});
 
 // Build Spec
-gulp.task('_buildSpec', function () {
-  return gulp.src(specFiles)
+gulp.task('_buildRemoteSpec', function () {
+  return gulp.src(remoteSpecFiles)
     .pipe(concat('tgi-store-remote.spec.js'))
+    .pipe(gulp.dest('dist'));
+});
+gulp.task('_buildHostSpec', function () {
+  return gulp.src(hostSpecFiles)
+    .pipe(concat('tgi-store-host.spec.js'))
     .pipe(gulp.dest('dist'));
 });
 
 // Build Task
-gulp.task('build', ['_buildLib', '_buildSpec'], function (callback) {
+gulp.task('build', ['_buildRemoteLib', '_buildRemoteSpec','_buildHostLib', '_buildHostSpec'], function (callback) {
   callback();
 });
 
 // Lint Lib
-gulp.task('_lintLib', ['_buildLib'], function (callback) {
-  return gulp.src('dist/tgi.core.js')
+gulp.task('_lintRemoteLib', ['_buildRemoteLib'], function (callback) {
+  return gulp.src('dist/tgi-store-remote.js')
+    .pipe(jshint())
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(jshint.reporter('fail'));
+});
+gulp.task('_lintHostLib', ['_buildHostLib'], function (callback) {
+  return gulp.src('dist/tgi-store-host.js')
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
 });
 
 // Lint Spec
-gulp.task('_lintSpec', ['_buildSpec'], function (callback) {
-  return gulp.src('dist/tgi.core.spec.js')
+gulp.task('_lintRemoteSpec', ['_buildRemoteSpec'], function (callback) {
+  return gulp.src('dist/tgi-store-remote.spec.js')
+    .pipe(jshint({validthis: true, sub:true}))
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(jshint.reporter('fail'));
+});
+gulp.task('_lintHostSpec', ['_buildHostSpec'], function (callback) {
+  return gulp.src('dist/tgi-store-host.spec.js')
     .pipe(jshint({validthis: true, sub:true}))
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
 });
 
 // Lint Task
-gulp.task('lint', ['_lintLib', '_lintSpec'], function (callback) {
+gulp.task('lint', ['_lintRemoteLib', '_lintRemoteSpec','_lintHostLib', '_lintHostSpec'], function (callback) {
   callback();
 });
 
@@ -77,25 +115,6 @@ gulp.task('test', ['lint'], function (callback) {
   });
 });
 
-// Coverage Task
-gulp.task('cover', function (callback) {
-  childProcess.exec('istanbul cover spec/node-runner.js', function (error, stdout, stderr) {
-    console.log(stdout);
-    console.error(stderr);
-    callback(error);
-  });
-});
+// Default Task
+gulp.task('default', ['lint']);
 
-// Spec Task
-gulp.task('spec', ['lint'], function (callback) {
-  setTimeout(function () {
-    childProcess.exec('node spec/node-make-spec-md.js', function (error, stdout, stderr) {
-      console.log(stdout);
-      callback(error);
-    });
-  }, 100); // Without this sometimes the exec runs before script is written/flushed ?
-});
-
-// Default & Travis CI Task
-gulp.task('default', ['test']);
-gulp.task('travis', ['test']);

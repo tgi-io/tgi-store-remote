@@ -1,13 +1,13 @@
 /**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/misc/lib-footer
+ * tgi-store-remote/lib/_packaging/lib-host-footer
  **/
   /* istanbul ignore next */
   if (typeof exports !== 'undefined') {
     if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = REMOTE_STORE;
+      exports = module.exports = HOST_STORE;
     }
-    exports.REMOTE_STORE = REMOTE_STORE;
+    exports.HOST_STORE = HOST_STORE;
   } else {
-    root.REMOTE_STORE = REMOTE_STORE;
+    root.HOST_STORE = HOST_STORE;
   }
 }).call(this);

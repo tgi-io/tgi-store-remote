@@ -11,7 +11,7 @@ app.use(connect.directory('.', {icons: true}));
 var os = require('os');
 var interfaces = os.networkInterfaces();
 var addresses = [];
-var k,k2;
+var k, k2;
 for (k in interfaces) {
   for (k2 in interfaces[k]) {
     var address = interfaces[k][k2];
@@ -30,7 +30,29 @@ var server = http.listen(Port, function () {
   'http://' + IP + ':' + Port + '/spec/html-runner.html');
 });
 
-
 // Start up Socket Server (io)
 var Connections = []; // Array of connections
 var io = require('socket.io').listen(server);
+
+// tgi lib
+var UTILITY = require('tgi-utility/dist/tgi.utility');
+var CORE = require('../dist/tgi-store-host.js');
+(function () {
+  UTILITY().injectMethods(this);
+  CORE().injectMethods(this);
+
+  Transport.hostStore = new MemoryStore();
+
+  io.on('connection', function (socket) {
+    console.log('socket.io connection: ' + socket.id);
+    socket.on('ackmessage', Transport.hostMessageProcess);
+    socket.on('message', function (obj) {
+      console.log('message socket.io message: ' + obj);
+    });
+    socket.on('disconnect', function (reason) {
+      console.log('message socket.io disconnect: ' + reason);
+    });
+  });
+
+}());
+
