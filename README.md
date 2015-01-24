@@ -3,6 +3,7 @@
 RemoteStore [read the spec](spec/README.md).
 
 # todo
+- update with new changes to packaging [BROKEN]
 - make tests for host side - cleanup code dependencies
 - automate client & server with phantomjs
 - put in tests to all stores
