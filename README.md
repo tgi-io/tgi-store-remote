@@ -3,7 +3,7 @@
 RemoteStore [read the spec](spec/README.md).
 
 # todo
-- getList regex getting hosed by transport [BROKEN]
+- running test twice failes 2nd time (getlist shizzy) [BROKEN]
 - Host side not running tests?
 - make tests for host side - cleanup code dependencies
 - automate client & server with phantomjs

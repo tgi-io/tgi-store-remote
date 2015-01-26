@@ -2512,7 +2512,16 @@ Transport.setMessageHandler('DeleteModel', function (messageContents, fn) {
 });
 
 Transport.setMessageHandler('GetList', function (messageContents, fn) {
-  console.log('GetList here ==== \n' + JSON.stringify(messageContents.filter) + '\n');
+  //console.log('GetList here ==== \n' + JSON.stringify(messageContents.filter));
+  var filter = messageContents.filter;
+  for (var i in filter)
+    if (filter.hasOwnProperty(i)) {
+      //console.log('before ' + i + ':' + filter[i] + '');
+      if (typeof filter[i] == 'string' && left(filter[i], 7) == 'RegExp:') {
+        filter[i] = new RegExp(right(filter[i], (filter[i].length) - 7));
+      }
+      //console.log('after ' + i + ':' + filter[i] + '');
+    }
   var proxyList = new List(new Model());
   proxyList.model.modelType = messageContents.list.model.modelType;
   proxyList.model.attributes = messageContents.list.model.attributes;

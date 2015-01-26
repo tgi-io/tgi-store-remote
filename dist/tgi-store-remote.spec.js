@@ -3692,6 +3692,7 @@ spec.my_runnerListStoreIntegration = function (SurrogateStore) {
             return;
           }
           test.shouldBeTrue(list._items.length == 1, ('1 not ' + list._items.length));
+          test.shouldBeTrue(11>12);
           getD();
         });
       }
