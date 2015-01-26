@@ -3,8 +3,10 @@
 RemoteStore [read the spec](spec/README.md).
 
 # todo
-- update with new changes to packaging [BROKEN]
+- getList regex getting hosed by transport [BROKEN]
+- Host side not running tests?
 - make tests for host side - cleanup code dependencies
 - automate client & server with phantomjs
 - put in tests to all stores
 - fix xexamples - will need to reset store before test
+- getlist sending whole list upstream ???

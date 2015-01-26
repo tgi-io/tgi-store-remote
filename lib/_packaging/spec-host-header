@@ -1,0 +1,5 @@
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-store-remote/lib/_packaging/spec-host-header
+ **/
+  // var HostStore = TGI.STORE.HOST().HostStore;
+  spec.mute(true);

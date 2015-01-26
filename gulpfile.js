@@ -12,31 +12,33 @@ var childProcess = require('child_process');
 // Source and _packaging
 var remoteLibFiles = [
   'lib/_packaging/lib-remote-header',
-  'lib/tgi-store-remote.lib.js',
   'node_modules/tgi-core/dist/tgi.core.chunk.js',
+  'lib/tgi-store-remote.lib.js',
   'lib/tgi-store-remote.source.js',
   'lib/_packaging/lib-remote-footer'
 ];
 var hostLibFiles = [
   'lib/_packaging/lib-host-header',
-  'lib/tgi-store-host.lib.js',
   'node_modules/tgi-core/dist/tgi.core.chunk.js',
+  'lib/tgi-store-host.lib.js',
   'lib/tgi-store-host.source.js',
   'lib/_packaging/lib-host-footer'
 ];
 
 // The Spec
 var remoteSpecFiles = [
-  'lib/_packaging/spec-header',
+  'node_modules/tgi-core//lib/_packaging/spec-header',
+  'lib/_packaging/spec-remote-header',
   'node_modules/tgi-core/dist/tgi.core.spec.chunk.js',
   'lib/tgi-store-remote.spec.js',
-  'lib/_packaging/spec-footer'
+  'lib/_packaging/spec-remote-footer'
 ];
 var hostSpecFiles = [
-  'lib/_packaging/spec-header',
+  'node_modules/tgi-core//lib/_packaging/spec-header',
+  'lib/_packaging/spec-host-header',
   'node_modules/tgi-core/dist/tgi.core.spec.chunk.js',
   'lib/tgi-store-host.spec.js',
-  'lib/_packaging/spec-footer'
+  'lib/_packaging/spec-host-footer'
 ];
 
 // Build Lib

@@ -4,10 +4,10 @@
   /* istanbul ignore next */
   if (typeof exports !== 'undefined') {
     if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = REMOTE_STORE;
+      exports = module.exports = TGI;
     }
-    exports.REMOTE_STORE = REMOTE_STORE;
+    exports.TGI = TGI;
   } else {
-    root.REMOTE_STORE = REMOTE_STORE;
+    root.TGI = TGI;
   }
 }).call(this);

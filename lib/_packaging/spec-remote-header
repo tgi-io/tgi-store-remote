@@ -1,0 +1,5 @@
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-store-remote/lib/_packaging/spec-remote-header
+ **/
+  var RemoteStore = TGI.STORE.REMOTE().RemoteStore;
+  spec.mute(true);

@@ -35,24 +35,21 @@ var Connections = []; // Array of connections
 var io = require('socket.io').listen(server);
 
 // tgi lib
-var UTILITY = require('tgi-utility/dist/tgi.utility');
-var CORE = require('../dist/tgi-store-host.js');
-(function () {
-  UTILITY().injectMethods(this);
-  CORE().injectMethods(this);
+var TGI = require('../dist/tgi-store-host.js');
+var tgi = TGI.CORE();
 
-  Transport.hostStore = new MemoryStore();
+tgi.Transport.hostStore = new tgi.MemoryStore();
 
-  io.on('connection', function (socket) {
-    console.log('socket.io connection: ' + socket.id);
-    socket.on('ackmessage', Transport.hostMessageProcess);
-    socket.on('message', function (obj) {
-      console.log('message socket.io message: ' + obj);
-    });
-    socket.on('disconnect', function (reason) {
-      console.log('message socket.io disconnect: ' + reason);
-    });
+io.on('connection', function (socket) {
+  console.log('socket.io connection: ' + socket.id);
+  socket.on('ackmessage', tgi.Transport.hostMessageProcess);
+  socket.on('message', function (obj) {
+    console.log('message socket.io message: ' + obj);
   });
+  socket.on('disconnect', function (reason) {
+    console.log('message socket.io disconnect: ' + reason);
+  });
+});
 
-}());
+
 
