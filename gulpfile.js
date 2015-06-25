@@ -11,19 +11,16 @@ var childProcess = require('child_process');
 
 // Source and _packaging
 var remoteLibFiles = [
-  'lib/_packaging/lib-remote-header',
-  'node_modules/tgi-core/dist/tgi.core.chunk.js',
   'lib/tgi-store-remote.lib.js',
-  'lib/tgi-store-remote.source.js',
-  'lib/_packaging/lib-remote-footer'
+  'lib/tgi-store-remote.source.js'
 ];
+var remoteLibPackaging = ['lib/_packaging/lib-remote-header'].concat(['node_modules/tgi-core/dist/tgi.core.chunk.js']).concat(remoteLibFiles).concat(['lib/_packaging/lib-remote-footer']);
+
 var hostLibFiles = [
-  'lib/_packaging/lib-host-header',
-  'node_modules/tgi-core/dist/tgi.core.chunk.js',
   'lib/tgi-store-host.lib.js',
-  'lib/tgi-store-host.source.js',
-  'lib/_packaging/lib-host-footer'
+  'lib/tgi-store-host.source.js'
 ];
+var hostLibPackaging = ['lib/_packaging/lib-host-header'].concat(['node_modules/tgi-core/dist/tgi.core.chunk.js']).concat(hostLibFiles).concat(['lib/_packaging/lib-host-footer']);
 
 // The Spec
 var remoteSpecFiles = [
@@ -43,7 +40,7 @@ var hostSpecFiles = [
 
 // Build Lib
 gulp.task('_buildRemoteLib', function () {
-  return gulp.src(remoteLibFiles)
+  return gulp.src(remoteLibPackaging)
     .pipe(concat('tgi-store-remote.js'))
     .pipe(gulp.dest('dist'))
     .pipe(rename('tgi-store-remote.min.js'))
@@ -51,13 +48,26 @@ gulp.task('_buildRemoteLib', function () {
     .pipe(gulp.dest('dist'));
 });
 gulp.task('_buildHostLib', function () {
-  return gulp.src(hostLibFiles)
+  return gulp.src(hostLibPackaging)
     .pipe(concat('tgi-store-host.js'))
     .pipe(gulp.dest('dist'))
     .pipe(rename('tgi-store-host.min.js'))
     .pipe(uglify())
     .pipe(gulp.dest('dist'));
 });
+
+// Build Lib Chunk
+gulp.task('_buildRemoteLibChunk', function () {
+  return gulp.src(remoteLibFiles)
+    .pipe(concat('tgi.store.remote.chunk.js'))
+    .pipe(gulp.dest('dist'));
+});
+gulp.task('_buildHostLibChunk', function () {
+  return gulp.src(hostLibFiles)
+    .pipe(concat('tgi.store.host.chunk.js'))
+    .pipe(gulp.dest('dist'));
+});
+
 
 // Build Spec
 gulp.task('_buildRemoteSpec', function () {
@@ -72,18 +82,18 @@ gulp.task('_buildHostSpec', function () {
 });
 
 // Build Task
-gulp.task('build', ['_buildRemoteLib', '_buildRemoteSpec','_buildHostLib', '_buildHostSpec'], function (callback) {
+gulp.task('build', ['_buildRemoteLib', '_buildRemoteLibChunk', '_buildRemoteSpec', '_buildHostLib', '_buildHostLibChunk', '_buildHostSpec'], function (callback) {
   callback();
 });
 
 // Lint Lib
-gulp.task('_lintRemoteLib', ['_buildRemoteLib'], function (callback) {
+gulp.task('_lintRemoteLib', ['_buildRemoteLib', '_buildRemoteLibChunk'], function (callback) {
   return gulp.src('dist/tgi-store-remote.js')
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
 });
-gulp.task('_lintHostLib', ['_buildHostLib'], function (callback) {
+gulp.task('_lintHostLib', ['_buildHostLib', '_buildHostLibChunk'], function (callback) {
   return gulp.src('dist/tgi-store-host.js')
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'))
@@ -93,19 +103,19 @@ gulp.task('_lintHostLib', ['_buildHostLib'], function (callback) {
 // Lint Spec
 gulp.task('_lintRemoteSpec', ['_buildRemoteSpec'], function (callback) {
   return gulp.src('dist/tgi-store-remote.spec.js')
-    .pipe(jshint({validthis: true, sub:true}))
+    .pipe(jshint({validthis: true, sub: true}))
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
 });
 gulp.task('_lintHostSpec', ['_buildHostSpec'], function (callback) {
   return gulp.src('dist/tgi-store-host.spec.js')
-    .pipe(jshint({validthis: true, sub:true}))
+    .pipe(jshint({validthis: true, sub: true}))
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
 });
 
 // Lint Task
-gulp.task('lint', ['_lintRemoteLib', '_lintRemoteSpec','_lintHostLib', '_lintHostSpec'], function (callback) {
+gulp.task('lint', ['_lintRemoteLib', '_lintRemoteSpec', '_lintHostLib', '_lintHostSpec'], function (callback) {
   callback();
 });
 
