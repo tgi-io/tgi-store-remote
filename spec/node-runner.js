@@ -50,6 +50,3 @@ io.on('connection', function (socket) {
     console.log('message socket.io disconnect: ' + reason);
   });
 });
-
-
-
