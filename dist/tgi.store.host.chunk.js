@@ -19,13 +19,20 @@ Transport.setMessageHandler('PutModel', function (messageContents, fn) {
     Model.call(this, args);
     this.modelType = messageContents.modelType;
     this.attributes = [];
-    for (var a in messageContents.attributes) {
-      var attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
-      if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
-        if (attrib.value != messageContents.attributes[a].value)
-          attrib.value = messageContents.attributes[a].value;
+    var a, attrib, v;
+    for (a in messageContents.attributes) {
+      if (messageContents.attributes[a].type == 'Model') {
+        v = new Attribute.ModelID(createModelFromModelType(messageContents.attributes[a].modelType));
+        v.value = messageContents.attributes[a].value;
+        attrib = new Attribute({name: messageContents.attributes[a].name, type: 'Model', value: v});
       } else {
-        attrib.value = messageContents.attributes[a].value;
+        attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
+        if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
+          if (attrib.value != messageContents.attributes[a].value)
+            attrib.value = messageContents.attributes[a].value;
+        } else {
+          attrib.value = messageContents.attributes[a].value;
+        }
       }
       this.attributes.push(attrib);
     }

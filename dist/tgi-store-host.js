@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.3.8',
+      version: '0.4.10',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -27,11 +27,14 @@ var TGI = {
       Request: Request,
       Session: Session,
       Store: Store,
+      Text: Text,
       Transport: Transport,
       User: User,
       Workspace: Workspace,
       inheritPrototype: inheritPrototype,
       getInvalidProperties: getInvalidProperties,
+      getConstructorFromModelType: getConstructorFromModelType,
+      createModelFromModelType: createModelFromModelType,
       trim: trim,
       ltrim: ltrim,
       rtrim: rtrim,
@@ -52,7 +55,7 @@ var TGI = {
 /**
  * Constructor
  */
- function Attribute(args, arg2) {
+function Attribute(args, arg2) {
   var splitTypes; // For String(30) type
   if (false === (this instanceof Attribute)) throw new Error('new operator required');
   if (typeof args == 'string') {
@@ -182,6 +185,9 @@ Attribute.prototype.onEvent = function (events, callback) {
   this._eventListeners.push({events: events, callback: callback});
   return this;
 };
+Attribute.prototype.offEvent = function () {
+  this._eventListeners = [];
+};
 Attribute.prototype._emitEvent = function (event) {
   var i;
   for (i in this._eventListeners) {
@@ -192,6 +198,14 @@ Attribute.prototype._emitEvent = function (event) {
       }
     }
   }
+};
+Attribute.prototype.get = function () {
+  return this.value;
+};
+Attribute.prototype.set = function (newValue) {
+  this.value = newValue;
+  this._emitEvent('StateChange');
+  return this.value;
 };
 Attribute.prototype.coerce = function (value) {
   var newValue = value;
@@ -514,7 +528,7 @@ Command.prototype.execute = function (context) {
         context.render(this, 'View');
         break;
       case 'Presentation':
-        context.render(this.contents, this.presentationMode);
+        context.render(this);
         break;
     }
   } catch (e) {
@@ -599,6 +613,9 @@ Command.prototype.execute = function (context) {
     switch (event) {
       case 'Error':
         self._emitEvent('Error', obj);
+        break;
+      case 'Aborted':
+        self.abort();
         break;
       case 'Completed':
         for (var t in tasks) {
@@ -801,11 +818,10 @@ Interface.prototype.dispatch = function (request, response) {
 Interface.prototype.notify = function (message) {
   if (false === (message instanceof Message)) throw new Error('Message required');
 };
-Interface.prototype.render = function (presentation, presentationMode, callback) {
-  if (false === (presentation instanceof Presentation)) throw new Error('Presentation object required');
-  if (typeof presentationMode !== 'string') throw new Error('presentationMode required');
-  if (!contains(Command.getPresentationModes(), presentationMode)) throw new Error('Invalid presentationMode: ' + presentationMode);
-  if (callback && typeof callback != 'function') throw new Error('optional second argument must a commandRequest callback function');
+Interface.prototype.render = function (command, callback) {
+  if (false === (command instanceof Command)) throw new Error('Command object required');
+  //if (!contains(Command.getPresentationModes(), presentationMode)) throw new Error('Invalid presentationMode: ' + presentationMode);
+  //if (callback && typeof callback != 'function') throw new Error('optional second argument must a commandRequest callback function');
 };
 Interface.prototype.info = function (text) {
   if (!text || typeof text !== 'string') throw new Error('text required');
@@ -893,7 +909,7 @@ List.prototype.get = function (attribute) {
       return this._items[this._itemIndex][i];
   }
 };
-List.prototype.set = function (attribute,value) {
+List.prototype.set = function (attribute, value) {
   if (this._items.length < 1) throw new Error('list is empty');
   for (var i = 0; i < this.model.attributes.length; i++) {
     if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
@@ -919,10 +935,19 @@ List.prototype.addItem = function (item) {
   this._itemIndex = this._items.length - 1;
   return this;
 };
-List.prototype.removeItem = function (item) {
+List.prototype.removeItem = function () {
   this._items.splice(this._itemIndex, 1);
   this._itemIndex--;
   return this;
+};
+List.prototype.findItemByID = function (id) {
+  var gotMore = this.moveFirst();
+  while (gotMore) {
+    if (id == this._items[this._itemIndex][0])
+      return true;
+    gotMore = this.moveNext();
+  }
+  return false;
 };
 List.prototype.indexedItem = function (index) {
   if (this._items.length < 1) return false;
@@ -999,7 +1024,10 @@ var Model = function (args) {
   this._eventListeners = [];
   this._errorConditions = {};
 };
-// Methods
+Model._ModelConstructor = {};
+/**
+ * Methods
+ */
 Model.prototype.toString = function () {
   return "a " + this.modelType;
 };
@@ -1033,7 +1061,7 @@ Model.prototype.getObjectStateErrors = function () {
 Model.prototype.get = function (attribute) {
   for (var i = 0; i < this.attributes.length; i++) {
     if (this.attributes[i].name.toUpperCase() == attribute.toUpperCase())
-      return this.attributes[i].value;
+      return this.attributes[i].get();
   }
 };
 Model.prototype.getAttributeType = function (attribute) {
@@ -1045,7 +1073,8 @@ Model.prototype.getAttributeType = function (attribute) {
 Model.prototype.set = function (attribute, value) {
   for (var i = 0; i < this.attributes.length; i++) {
     if (this.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
-      this.attributes[i].value = value;
+      this.attributes[i].set(value);
+      this._emitEvent('StateChange');
       return;
     }
   }
@@ -1352,6 +1381,62 @@ Store.prototype.getList = function () {
 };
 
 /**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/core/tgi-core-text.source.js
+ */
+/**
+ * Constructor
+ */
+function Text(contents) {
+  if (false === (this instanceof Text)) throw new Error('new operator required');
+  this.contents = contents || '';
+  this._eventListeners = [];
+}
+/**
+ * Methods
+ */
+Text.prototype.toString = function () {
+  return 'Text: \'' + (this.contents || '') + '\'';
+};
+Text.prototype.get = function () {
+  return this.contents;
+};
+Text.prototype.set = function (newValue) {
+  this.contents = newValue;
+  this._emitEvent('StateChange');
+  return this.contents;
+};
+Text.prototype._emitEvent = function (event) {
+  var i;
+  for (i in this._eventListeners) {
+    if (this._eventListeners.hasOwnProperty(i)) {
+      var subscriber = this._eventListeners[i];
+      if ((subscriber.events.length && subscriber.events[0] === '*') || contains(subscriber.events, event)) {
+        subscriber.callback.call(this, event);
+      }
+    }
+  }
+};
+Text.prototype.onEvent = function (events, callback) {
+  if (!(events instanceof Array)) {
+    if (typeof events != 'string') throw new Error('subscription string or array required');
+    events = [events]; // coerce to array
+  }
+  if (typeof callback != 'function') throw new Error('callback is required');
+  // Check known Events
+  for (var i in events) {
+    if (events.hasOwnProperty(i))
+      if (events[i] != '*')
+        if (!contains(['StateChange'], events[i]))
+          throw new Error('Unknown command event: ' + events[i]);
+  }
+  // All good add to chain
+  this._eventListeners.push({events: events, callback: callback});
+  return this;
+};
+Text.prototype.offEvent = function () {
+  this._eventListeners = [];
+};
+/**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/core/tgi-core-transport.source.js
  */
 /* istanbul ignore next */
@@ -1399,13 +1484,18 @@ function Transport(location, callback) {
     }
   });
   self.socket.on('message', function (obj) {
-    console.log('socket.io (' + self.location + ') message: ' + obj);
+    if (self.rawCallBack) {
+      self.rawCallBack(obj);
+    } else {
+      console.log('socket.io (' + self.location + ') message: ' + obj);
+    }
   });
   self.socket.on('disconnect', function (reason) {
     self.connected = false;
     console.log('socket.io (' + self.location + ') disconnect: ' + reason);
   });
 }
+Transport.showLog=true;
 /**
  * pub/sub thingies
  */
@@ -1414,6 +1504,8 @@ Transport.setMessageHandler = function (message, handler) {
   Transport.messageHandlers[message] = handler;
 };
 Transport.hostMessageProcess = function (obj, fn) {
+  if (Transport.showLog)
+    console.log('Transport.hostMessageProcess ' + JSON.stringify(obj));
   if (Transport.messageHandlers[obj.type]) {
     Transport.messageHandlers[obj.type](obj.contents, fn);
   } else {
@@ -1426,6 +1518,12 @@ Transport.hostMessageProcess = function (obj, fn) {
  * Methods
  */
 /* istanbul ignore next */
+Transport.prototype.sendRaw = function (message) {
+  this.socket.send(message);
+};
+Transport.prototype.onRaw = function (callback) {
+  this.rawCallBack = callback;
+};
 Transport.prototype.send = function (message, callback) {
   var self = this;
   if (typeof message == 'undefined') throw new Error('message required');
@@ -1436,10 +1534,14 @@ Transport.prototype.send = function (message, callback) {
     return;
   }
   if (typeof callback != 'undefined') {
+    if (Transport.showLog)
+      console.log('Transport emit ' + JSON.stringify(message));
     self.socket.emit('ackmessage', message, function (msg) {
       callback.call(self, msg);
     });
   } else {
+    if (Transport.showLog)
+      console.log('Transport send ' + JSON.stringify(message));
     self.socket.send(message);
   }
 };
@@ -1911,6 +2013,8 @@ var Application = function (args) {
   this.set('brand', 'NEW APP');
 };
 Application.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Application = Application;
+
 
 /**
  * Methods
@@ -2037,6 +2141,7 @@ var Log = function (args) {
   this.modelType = "Log";
 };
 Log.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Log = Log;
 /**
  * Methods
  */
@@ -2064,6 +2169,7 @@ var Presentation = function (args) {
   this.modelType = "Presentation";
 };
 Presentation.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Presentation = Presentation;
 /*
  * Methods
  */
@@ -2075,11 +2181,11 @@ Presentation.prototype.getObjectStateErrors = function (modelCheckOnly) {
     var gotError = false;
     if (contents instanceof Array) {
       for (i = 0; i < contents.length; i++) {
-        if (!(contents[i] instanceof Command || contents[i] instanceof Attribute || typeof contents[i] == 'string'))
+        if (!(contents[i] instanceof Text || contents[i] instanceof Command || contents[i] instanceof Attribute || contents[i] instanceof List || typeof contents[i] == 'string'))
           gotError = true;
       }
       if (gotError)
-        this.validationErrors.push('contents elements must be Command, Attribute or string');
+        this.validationErrors.push('contents elements must be Text, Command, Attribute, List or string');
     } else {
       this.validationErrors.push('contents must be Array');
     }
@@ -2087,6 +2193,7 @@ Presentation.prototype.getObjectStateErrors = function (modelCheckOnly) {
   this.validationMessage = this.validationErrors.length > 0 ? this.validationErrors[0] : '';
   return this.validationErrors;
 };
+
 Presentation.prototype.validate = function (callback) {
   var presentation = this;
   if (typeof callback != 'function') throw new Error('callback is required');
@@ -2103,32 +2210,43 @@ Presentation.prototype.validate = function (callback) {
   var attributeCount = 0;
   var checkCount = 0;
   var contents = this.get('contents');
-  if (contents instanceof Array) {
-    // Count first
-    for (i = 0; i < contents.length; i++) {
-      if (contents[i] instanceof Attribute) {
-        attributeCount++;
-      }
-    }
-    // Launch validations
-    for (i = 0; i < contents.length; i++) {
-      if (contents[i] instanceof Attribute) {
-        contents[i].validate(checkAttrib);
-      }
+  if (!(contents instanceof Array))
+    contents = [];
+
+  // Count first
+  for (i = 0; i < contents.length; i++) {
+    if (contents[i] instanceof Attribute) {
+      attributeCount++;
     }
   }
+  // Launch validations
+  for (i = 0; i < contents.length; i++) {
+    if (contents[i] instanceof Attribute) {
+      contents[i].validate(checkAttrib);
+    }
+  }
+
+  // If no attributes call callback since checkAttrib not called
+  if (contents.length < 1)
+    finishUp();
+
   function checkAttrib() {
     checkCount++;
     // this is the attribute TODO this bad usage ?
     if (this.validationMessage) // jshint ignore:line
       gotError = true;
-    if (checkCount==checkCount) {
+    if (attributeCount == checkCount) {
       if (gotError)
         presentation.validationErrors.push('contents has validation errors');
-      presentation.validationMessage = presentation.validationErrors.length > 0 ? presentation.validationErrors[0] : '';
-      callback();
+      finishUp();
     }
   }
+
+  function finishUp() {
+    presentation.validationMessage = presentation.validationErrors.length > 0 ? presentation.validationErrors[0] : '';
+    callback();
+  }
+
 };
 
 /**
@@ -2154,6 +2272,7 @@ var Session = function (args) {
   this.set('active', false);
 };
 Session.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Session = Session;
 /*
  * Methods
  */
@@ -2258,9 +2377,10 @@ var User = function (args) {
   args.attributes.push(new Attribute({name: 'email', type: 'String(20)'}));
   Model.call(this, args);
   this.modelType = "User";
-  this.set('active',false);
+  this.set('active', false);
 };
 User.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.User = User;
 /**
  * tequila
  * workspace-class
@@ -2282,6 +2402,7 @@ function Workspace(args) {
   this.modelType = "Workspace";
 }
 Workspace.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Workspace = Workspace;
 /*
  * Methods
  */
@@ -2523,6 +2644,23 @@ var getInvalidProperties = function (args, allowedProperties) {
   return props;
 };
 
+/**
+ * getConstructorFromModelType(modelType)
+ */
+var getConstructorFromModelType = function (modelType) {
+  return Model._ModelConstructor[modelType] || Model;
+};
+
+/**
+ * createModelFromModelType(modelType)
+ */
+var createModelFromModelType = function (modelType) {
+  var ProxyModel = getConstructorFromModelType(modelType);
+  return new ProxyModel();
+};
+
+
+
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/utility/tgi-core-strings.source.js
  */
@@ -2633,13 +2771,20 @@ Transport.setMessageHandler('PutModel', function (messageContents, fn) {
     Model.call(this, args);
     this.modelType = messageContents.modelType;
     this.attributes = [];
-    for (var a in messageContents.attributes) {
-      var attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
-      if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
-        if (attrib.value != messageContents.attributes[a].value)
-          attrib.value = messageContents.attributes[a].value;
+    var a, attrib, v;
+    for (a in messageContents.attributes) {
+      if (messageContents.attributes[a].type == 'Model') {
+        v = new Attribute.ModelID(createModelFromModelType(messageContents.attributes[a].modelType));
+        v.value = messageContents.attributes[a].value;
+        attrib = new Attribute({name: messageContents.attributes[a].name, type: 'Model', value: v});
       } else {
-        attrib.value = messageContents.attributes[a].value;
+        attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
+        if (attrib.name == 'id') { // TODO only If mongo! or refactor mongo to normalize IDs
+          if (attrib.value != messageContents.attributes[a].value)
+            attrib.value = messageContents.attributes[a].value;
+        } else {
+          attrib.value = messageContents.attributes[a].value;
+        }
       }
       this.attributes.push(attrib);
     }

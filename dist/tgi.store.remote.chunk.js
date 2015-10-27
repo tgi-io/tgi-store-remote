@@ -58,7 +58,7 @@ RemoteStore.prototype.onConnect = function (location, callback, options) {
         return;
       }
       if (msg.type == 'Connected') {
-        console.log('Transport connected: ' + store.name);
+        //console.log('Transport connected: ' + store.name);
         store.storeProperty.isReady = true;
         RemoteStore.transport = store.transport; // todo a static connection not well designed
         callback(store);
@@ -78,7 +78,7 @@ RemoteStore.prototype.getModel = function (model, callback) {
   if (!model.attributes[0].value) throw new Error('ID not set');
   if (typeof callback != "function") throw new Error('callback required');
   this.transport.send(new Message('GetModel', model), function (msg) {
-    console.log('GetModel callback');
+    //console.log('GetModel callback');
     if (false && msg == 'Ack') { // todo wtf is this
       callback(model);
     } else if (msg.type == 'GetModelAck') {
@@ -105,7 +105,6 @@ RemoteStore.prototype.putModel = function (model, callback) {
   if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
   if (typeof callback != "function") throw new Error('callback required');
   this.transport.send(new Message('PutModel', model), function (msg) {
-    console.log('PutModel callback');
     if (false && msg == 'Ack') { // todo wtf is this
       callback(model);
     } else if (msg.type == 'PutModelAck') {
@@ -113,8 +112,15 @@ RemoteStore.prototype.putModel = function (model, callback) {
       model.attributes = [];
       for (var a in c.attributes) {
         if (c.attributes.hasOwnProperty(a)) {
-          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
-          attrib.value = c.attributes[a].value;
+          var attrib;
+          if (c.attributes[a].type=='Model') {
+            var v = new Attribute.ModelID(new Model());
+            v.value = c.attributes[a].value;
+            attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
+          } else {
+            attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+            attrib.value = c.attributes[a].value;
+          }
           model.attributes.push(attrib);
         }
       }
@@ -127,12 +133,13 @@ RemoteStore.prototype.putModel = function (model, callback) {
     }
   });
 };
+
 RemoteStore.prototype.deleteModel = function (model, callback) {
   if (!(model instanceof Model)) throw new Error('argument must be a Model');
   if (model.getObjectStateErrors().length) throw new Error('model has validation errors');
   if (typeof callback != "function") throw new Error('callback required');
   this.transport.send(new Message('DeleteModel', model), function (msg) {
-    console.log('DeleteModel callback');
+    //console.log('DeleteModel callback');
     if (false && msg == 'Ack') { // todo wtf is this
       callback(model);
     } else if (msg.type == 'DeleteModelAck') {
