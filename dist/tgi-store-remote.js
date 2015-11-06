@@ -2818,7 +2818,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.REMOTE = function () {
   return {
-    version: '0.0.3',
+    version: '0.0.9',
     RemoteStore: RemoteStore
   };
 };
@@ -2922,26 +2922,50 @@ RemoteStore.prototype.putModel = function (model, callback) {
     if (false && msg == 'Ack') { // todo wtf is this
       callback(model);
     } else if (msg.type == 'PutModelAck') {
-      var c = msg.contents;
-
+      var contents = msg.contents;
+      //for (var b in model.attributes) {
+      //  if (model.attributes[b].type == 'Model') {
+      //    console.log('value before ' + JSON.stringify(model.attributes[b].value));
+      //  }
+      //}
       model.attributes = [];
-      for (var a in c.attributes) {
-        if (c.attributes.hasOwnProperty(a)) {
+      for (var a in contents.attributes) {
+        if (contents.attributes.hasOwnProperty(a)) {
           var attrib;
-          //if (c.attributes[a].type=='Model') {
-          //  var v = new Attribute.ModelID(new Model());
-          //  v.value = c.attributes[a].value;
-          //  attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
-          //} else {
-            attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
-            attrib.value = c.attributes[a].value;
-          //}
+          if (contents.attributes[a].type == 'Model') {
+
+            var sourceModel = createModelFromModelType(contents.attributes[a].modelType);
+            var modelID = new Attribute.ModelID(sourceModel);
+
+            modelID.value = contents.attributes[a].value.value;
+            if (contents.attributes[a].value.name)
+              modelID.name = contents.attributes[a].value.name;
+
+
+
+            //  var v = new Attribute.ModelID(new Model());
+            //  v.value = c.attributes[a].value;
+            //  attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
+
+            attrib = new Attribute({name: contents.attributes[a].name, type: contents.attributes[a].type, value: modelID});
+
+            //attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
+            //attrib.value = c.attributes[a].value;
+
+            //console.log('modelID ' + JSON.stringify(modelID));
+            //console.log('contents    ' + JSON.stringify(contents.attributes[a].value));
+            //console.log('value after ' + JSON.stringify(attrib.value));
+
+          } else {
+            attrib = new Attribute(contents.attributes[a].name, contents.attributes[a].type);
+            attrib.value = contents.attributes[a].value;
+          }
           model.attributes.push(attrib);
         }
       }
 
-      if (typeof c == 'string')
-        callback(model, c);
+      if (typeof contents == 'string')
+        callback(model, contents);
       else
         callback(model);
     } else {
@@ -2993,8 +3017,8 @@ RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
       //console.log('before ' + i + ':' + filter[i] + '');
       if (filter[i] instanceof RegExp) {
         filter[i] = filter[i].toString();
-        filter[i] = left(filter[i],filter[i].length-1);
-        filter[i] = right(filter[i],filter[i].length-1);
+        filter[i] = left(filter[i], filter[i].length - 1);
+        filter[i] = right(filter[i], filter[i].length - 1);
         filter[i] = 'RegExp:' + filter[i];
       }
       //console.log('after ' + i + ':' + filter[i] + '');
