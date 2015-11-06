@@ -4,7 +4,7 @@
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.HOST = function () {
   return {
-    version: '0.0.?'
+    version: '0.0.6'
   };
 };
 

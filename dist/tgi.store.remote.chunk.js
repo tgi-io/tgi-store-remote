@@ -4,7 +4,7 @@
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.REMOTE = function () {
   return {
-    version: '0.0.?',
+    version: '0.0.3',
     RemoteStore: RemoteStore
   };
 };
@@ -109,21 +109,23 @@ RemoteStore.prototype.putModel = function (model, callback) {
       callback(model);
     } else if (msg.type == 'PutModelAck') {
       var c = msg.contents;
+
       model.attributes = [];
       for (var a in c.attributes) {
         if (c.attributes.hasOwnProperty(a)) {
           var attrib;
-          if (c.attributes[a].type=='Model') {
-            var v = new Attribute.ModelID(new Model());
-            v.value = c.attributes[a].value;
-            attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
-          } else {
+          //if (c.attributes[a].type=='Model') {
+          //  var v = new Attribute.ModelID(new Model());
+          //  v.value = c.attributes[a].value;
+          //  attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
+          //} else {
             attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
             attrib.value = c.attributes[a].value;
-          }
+          //}
           model.attributes.push(attrib);
         }
       }
+
       if (typeof c == 'string')
         callback(model, c);
       else

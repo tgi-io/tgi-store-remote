@@ -106,10 +106,15 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
       spec.example('modelType is set from model in constructor', 'Model', function () {
         return new Attribute.ModelID(new Model()).modelType;
       });
-      spec.example('toString is more descriptive', "ModelID(Model:123)", function () {
+      spec.example('toString is more descriptive', "Model 123", function () {
         var model = new Model();
         model.set('id', 123);
         return new Attribute.ModelID(model).toString();
+      });
+      spec.example('model short name used in string description if applies', 'User Error', function () {
+        var user = new User();
+        user.set('name','Error');
+        return new Attribute.ModelID(user).toString();
       });
     });
   });
@@ -271,7 +276,7 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
           var myModel = new Model();
           var myGroup = new Attribute({name: 'columns', type: 'Group', value: [new Attribute("Name")]});
           var myTable = new Attribute({name: 'bills', type: 'Table', group: myGroup});
-          var myValues = ['Jane Doe', new Date(), true, 18, new Attribute.ModelID(new Model()), [], myTable];
+          var myValues = ['Jane Doe', new Date(), true, 18, new Attribute.ModelID(myModel), [], myTable];
 
           // Loop thru each type
           var theGood = 0;
@@ -368,6 +373,15 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
             type: 'Model',
             value: new Attribute.ModelID(new Model())
           }).modelType;
+      });
+      spec.example('set method usage checks for valid type', Error('set error: value must be Attribute.ModelID'), function () {
+        new Attribute(
+          {
+            name: 'Twiggy',
+            type: 'Model',
+            value: new Attribute.ModelID(new Model())
+          }).set(1);
+
       });
     });
     spec.heading('Group', function () {
@@ -1067,7 +1081,7 @@ spec.test('tgi-core/lib/tgi-core-delta.spec.js', 'Delta', 'represents changes to
       });
     });
     spec.heading('modelID', function () {
-      spec.example('set from constructor', "ModelID(Model:null)", function () {
+      spec.example('set from constructor', "Model null", function () {
         var delta = new Delta(new Attribute.ModelID(new Model()));
         this.log(delta.dateCreated);
         return delta.modelID.toString();
@@ -1220,6 +1234,33 @@ spec.runnerInterfaceMethods = function (SurrogateInterface) {
       });
       spec.example('must supply the text info', Error('text parameter required'), function () {
         new Application({interface: new SurrogateInterface()}).info();
+      });
+    });
+    spec.heading('done(text)', function () {
+      spec.paragraph('Display done to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().done();
+      });
+      spec.example('must supply the text info', Error('text parameter required'), function () {
+        new Application({interface: new SurrogateInterface()}).done();
+      });
+    });
+    spec.heading('warn(text)', function () {
+      spec.paragraph('Display warning to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().warn();
+      });
+      spec.example('must supply the text info', Error('text parameter required'), function () {
+        new Application({interface: new SurrogateInterface()}).warn();
+      });
+    });
+    spec.heading('err(text)', function () {
+      spec.paragraph('Display error to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().err();
+      });
+      spec.example('must supply the text info', Error('text parameter required'), function () {
+        new Application({interface: new SurrogateInterface()}).err();
       });
     });
     spec.heading('ok(prompt, callback)', function () {
@@ -1811,13 +1852,13 @@ spec.test('tgi-core/lib/tgi-core-message.spec.js', 'Message', 'between host and 
  * tgi-core/lib/tgi-core-model.spec.js
  */
 spec.test('tgi-core/lib/tgi-core-model.spec.js', 'Model', 'abstracts entities using a collection of attributes', function (callback) {
-  spec.testModel(Model,true);
+  spec.testModel(Model, true);
 });
 
 /**
  * test Model and Models
  */
-spec.testModel = function (SurrogateModel,root) {
+spec.testModel = function (SurrogateModel, root) {
   if (!root) {
     spec.mute(true);
   }
@@ -1931,6 +1972,27 @@ spec.testModel = function (SurrogateModel,root) {
         });
       });
     });
+    spec.heading('getShortName', function () {
+      spec.example('returns short description of model, defaults to first string attribute', 'Shorty', function () {
+        var question = new SurrogateModel({attributes: [new Attribute('name')]});
+        question.attributes[1].value = 'Shorty';
+        return question.getShortName();
+      });
+      spec.example('if no string attribute found empty string returned', '', function () {
+        // Test for model since models may provide attributes to fail this test
+        var question = new Model({attributes: [new Attribute('answer', 'Number')]});
+        question.attributes[1].value = 42;
+        return question.getShortName();
+      });
+    });
+    spec.heading('getLongName', function () {
+      spec.paragraph('note - both getShortName and getLongName should be overriden with method returning desired results when needed.');
+      spec.example('return a more verbose name for model than getShortName', 'Shorty', function () {
+        var question = new SurrogateModel({attributes: [new Attribute('name')]});
+        question.attributes[1].value = 'Shorty';
+        return question.getLongName();
+      });
+    });
     spec.heading('get(attributeName)', function () {
       spec.example('returns undefined if the attribute does not exist', undefined, function () {
         this.shouldBeTrue(new SurrogateModel().get('whatever') === undefined);
@@ -1943,7 +2005,7 @@ spec.testModel = function (SurrogateModel,root) {
     });
     spec.heading('getAttributeType(attributeName)', function () {
       spec.example('returns attribute type for given attribute name', 'Date', function () {
-        return new Model({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
+        return new SurrogateModel({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
       });
     });
     spec.heading('set(attributeName,value)', function () {
@@ -3203,6 +3265,30 @@ spec.test('tgi-core/lib/models/tgi-core-model-application.spec.js', 'Application
         new Application().dispatch(new Request({type: 'Command', command: new Command()}), true);
       });
     });
+    spec.heading('info(text)', function () {
+      spec.paragraph('Display info to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().info(); // see Interface for more info
+      });
+    });
+    spec.heading('done(text)', function () {
+      spec.paragraph('Display done to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().done(); // see Interface for more info
+      });
+    });
+    spec.heading('warn(text)', function () {
+      spec.paragraph('Display info to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().warn(); // see Interface for more info
+      });
+    });
+    spec.heading('err(text)', function () {
+      spec.paragraph('Display info to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().err(); // see Interface for more info
+      });
+    });
     spec.heading('ok(prompt, callback)', function () {
       spec.paragraph('Pause before proceeding');
       spec.example('must set interface before invoking', Error('interface not set'), function () {
@@ -3352,7 +3438,7 @@ spec.test('tgi-core/lib/models/tgi-core-model-log.spec.js', 'Log', 'information 
 });
 
 /**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/models/tgi-core-model-presentation.test.js
+ * tgi-core/lib/models/tgi-core-model-presentation.spec.js
  */
 spec.test('tgi-core/lib/models/tgi-core-model-presentation.spec.js', 'Presentation', 'used by Interface to render data', function (callback) {
   spec.heading('Presentation Model', function () {
@@ -3378,6 +3464,9 @@ spec.test('tgi-core/lib/models/tgi-core-model-presentation.spec.js', 'Presentati
         spec.example('string description of error(s)', '', function () {
           return new Presentation().validationMessage;
         });
+      });
+      spec.heading('preRenderCallback', function () {
+        spec.paragraph('preRenderCallback can be set to prepare presentation prior to Interface render');
       });
     });
     spec.heading('ATTRIBUTES', function () {

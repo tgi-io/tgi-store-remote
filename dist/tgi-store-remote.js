@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.10',
+      version: '0.4.17',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -152,15 +152,25 @@ function Attribute(args, arg2) {
 Attribute.ModelID = function (model) {
   if (false === (this instanceof Attribute.ModelID)) throw new Error('new operator required');
   if (false === (model instanceof Model)) throw new Error('must be constructed with Model');
-  this.value = model.get('id');
+  var shorty = model.getShortName();
+  if (shorty)
+    this.value = [model.get('id'), shorty];
+  else
+    this.value = model.get('id');
   this.constructorFunction = model.constructor;
   this.modelType = model.modelType;
 };
 Attribute.ModelID.prototype.toString = function () {
-  if (typeof this.value == 'string')
-    return 'ModelID(' + this.modelType + ':\'' + this.value + '\')';
+
+  if (this.value instanceof Array)
+    return this.modelType + ' ' + this.value[1];
   else
-    return 'ModelID(' + this.modelType + ':' + this.value + ')';
+    return this.modelType + ' ' + this.value;
+
+  //if (typeof this.value == 'string')
+  //  return 'ModelID(' + this.modelType + ':\'' + this.value + '\')';
+  //else
+  //  return this.modelType + ' ' + this.value;
 };
 /**
  * Methods
@@ -203,7 +213,17 @@ Attribute.prototype.get = function () {
   return this.value;
 };
 Attribute.prototype.set = function (newValue) {
-  this.value = newValue;
+  switch (this.type) {
+    case 'Model':
+      if (newValue instanceof Attribute.ModelID)
+        this.value = newValue;
+      else {
+        throw new Error('set error: value must be Attribute.ModelID');
+      }
+      break;
+    default:
+      this.value = newValue;
+  }
   this._emitEvent('StateChange');
   return this.value;
 };
@@ -497,13 +517,15 @@ Command.prototype._emitEvent = function (event, obj) {
   //  this._eventListeners = [];
 };
 Command.prototype.execute = function (context) {
-  if (!this.type) throw new Error('command not implemented');
-  if (!contains(['Function', 'Procedure', 'Menu', 'Presentation'], this.type)) throw new Error('command type ' + this.type + ' not implemented');
+  var command = this;
+  var args = arguments;
+  if (!command.type) throw new Error('command not implemented');
+  if (!contains(['Function', 'Procedure', 'Menu', 'Presentation'], command.type)) throw new Error('command type ' + command.type + ' not implemented');
   var errors;
-  switch (this.type) {
+  switch (command.type) {
     case 'Presentation':
-      if (!(this.contents instanceof Presentation)) throw new Error('contents must be a Presentation');
-      errors = this.contents.getObjectStateErrors();
+      if (!(command.contents instanceof Presentation)) throw new Error('contents must be a Presentation');
+      errors = command.contents.getObjectStateErrors();
       if (errors.length) {
         if (errors.length > 1)
           throw new Error('error executing Presentation: multiple errors');
@@ -513,11 +535,10 @@ Command.prototype.execute = function (context) {
       if (!(context instanceof Interface)) throw new Error('interface param required');
       break;
   }
-  var self = this;
-  var args = arguments;
-  this._emitEvent('BeforeExecute');
+
+  command._emitEvent('BeforeExecute');
   try {
-    switch (this.type) {
+    switch (command.type) {
       case 'Function':
         setTimeout(callFunc, 0);
         break;
@@ -525,34 +546,41 @@ Command.prototype.execute = function (context) {
         setTimeout(procedureExecuteInit, 0);
         break;
       case 'Menu':
-        context.render(this, 'View');
+        context.render(command, 'View');
         break;
       case 'Presentation':
-        context.render(this);
+        if (command.contents.preRenderCallback) {
+          command.contents.preRenderCallback(command, function () {
+            context.render(command);
+          });
+        } else {
+          context.render(command);  
+        }
         break;
     }
   } catch (e) {
-    this.error = e;
-    this._emitEvent('Error', e);
-    this._emitEvent('Completed');
-    this.status = -1;
+    command.error = e;
+    command._emitEvent('Error', e);
+    command._emitEvent('Completed');
+    command.status = -1;
   }
-  this._emitEvent('AfterExecute');
+  command._emitEvent('AfterExecute');
+  
   function callFunc() {
-    self.status = 0;
+    command.status = 0;
     try {
-      self.contents.apply(self, args); // give function this context to command object (self)
+      command.contents.apply(command, args); // give function this context to command object (command)
     } catch (e) {
-      self.error = e;
-      self._emitEvent('Error', e);
-      self._emitEvent('Completed');
-      self.status = -1;
+      command.error = e;
+      command._emitEvent('Error', e);
+      command._emitEvent('Completed');
+      command.status = -1;
     }
   }
 
   function procedureExecuteInit() {
-    self.status = 0;
-    var tasks = self.contents.tasks || [];
+    command.status = 0;
+    var tasks = command.contents.tasks || [];
     for (var t = 0; t < tasks.length; t++) {
       // shorthand for function command gets coerced into longhand
       if (typeof tasks[t] == 'function') {
@@ -562,7 +590,7 @@ Command.prototype.execute = function (context) {
       // Initialize if not done
       if (!tasks[t].command._parentProcedure) {
         tasks[t].command._taskIndex = t;
-        tasks[t].command._parentProcedure = self;
+        tasks[t].command._parentProcedure = command;
         tasks[t].command.onEvent('*', ProcedureEvents);
       }
       tasks[t].command.status = undefined;
@@ -571,7 +599,7 @@ Command.prototype.execute = function (context) {
   }
 
   function procedureExecute() {
-    var tasks = self.contents.tasks || [];
+    var tasks = command.contents.tasks || [];
     for (var t = 0; t < tasks.length; t++) {
       // Execute if it is time
       var canExecute = true;
@@ -608,14 +636,14 @@ Command.prototype.execute = function (context) {
   }
 
   function ProcedureEvents(event, obj) {
-    var tasks = self.contents.tasks;
+    var tasks = command.contents.tasks;
     var allTasksDone = true; // until proved wrong ...
     switch (event) {
       case 'Error':
-        self._emitEvent('Error', obj);
+        command._emitEvent('Error', obj);
         break;
       case 'Aborted':
-        self.abort();
+        command.abort();
         break;
       case 'Completed':
         for (var t in tasks) {
@@ -626,7 +654,7 @@ Command.prototype.execute = function (context) {
           }
         }
         if (allTasksDone)
-          self.complete(); // todo when all run
+          command.complete(); // todo when all run
         else
           procedureExecute();
         break;
@@ -824,6 +852,15 @@ Interface.prototype.render = function (command, callback) {
   //if (callback && typeof callback != 'function') throw new Error('optional second argument must a commandRequest callback function');
 };
 Interface.prototype.info = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
+Interface.prototype.done = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
+Interface.prototype.warn = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
+Interface.prototype.err = function (text) {
   if (!text || typeof text !== 'string') throw new Error('text required');
 };
 Interface.prototype.ok = function (prompt, callback) {
@@ -1063,6 +1100,16 @@ Model.prototype.get = function (attribute) {
     if (this.attributes[i].name.toUpperCase() == attribute.toUpperCase())
       return this.attributes[i].get();
   }
+};
+Model.prototype.getShortName = function () {
+  for (var i = 0; i < this.attributes.length; i++) {
+    if (this.attributes[i].type == 'String')
+      return this.attributes[i].get();
+  }
+  return '';
+};
+Model.prototype.getLongName = function () {
+  return this.getShortName();
 };
 Model.prototype.getAttributeType = function (attribute) {
   for (var i = 0; i < this.attributes.length; i++) {
@@ -1495,7 +1542,7 @@ function Transport(location, callback) {
     console.log('socket.io (' + self.location + ') disconnect: ' + reason);
   });
 }
-Transport.showLog=true;
+Transport.showLog=false; // set to true to show message
 /**
  * pub/sub thingies
  */
@@ -2073,6 +2120,21 @@ Application.prototype.info = function (text) {
   if (!text || typeof text !== 'string') throw new Error('text parameter required');
   this.primaryInterface.info(text);
 };
+Application.prototype.done = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.done(text);
+};
+Application.prototype.warn = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.warn(text);
+};
+Application.prototype.err = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.err(text);
+};
 Application.prototype.ok = function (prompt, callback) {
   if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
   if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
@@ -2305,7 +2367,7 @@ Session.prototype.startSession = function (store, userName, password, ip, callba
     // Got user create new session
     // TODO: Make this server side tied to yet to be designed store integrated authentication
     list.moveFirst();
-    self.set('userID', list.get('id'));
+    self.set('userID', new Attribute.ModelID(list.model));
     self.set('active', true);
     self.set('passCode', passCode);
     self.set('ipAddress', ip);
@@ -2756,7 +2818,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.REMOTE = function () {
   return {
-    version: '0.0.?',
+    version: '0.0.3',
     RemoteStore: RemoteStore
   };
 };
@@ -2861,21 +2923,23 @@ RemoteStore.prototype.putModel = function (model, callback) {
       callback(model);
     } else if (msg.type == 'PutModelAck') {
       var c = msg.contents;
+
       model.attributes = [];
       for (var a in c.attributes) {
         if (c.attributes.hasOwnProperty(a)) {
           var attrib;
-          if (c.attributes[a].type=='Model') {
-            var v = new Attribute.ModelID(new Model());
-            v.value = c.attributes[a].value;
-            attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
-          } else {
+          //if (c.attributes[a].type=='Model') {
+          //  var v = new Attribute.ModelID(new Model());
+          //  v.value = c.attributes[a].value;
+          //  attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
+          //} else {
             attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
             attrib.value = c.attributes[a].value;
-          }
+          //}
           model.attributes.push(attrib);
         }
       }
+
       if (typeof c == 'string')
         callback(model, c);
       else
