@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.21',
+      version: '0.4.22',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -941,8 +941,13 @@ List.prototype.clear = function () {
 List.prototype.get = function (attribute) {
   if (this._items.length < 1) throw new Error('list is empty');
   for (var i = 0; i < this.model.attributes.length; i++) {
-    if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase())
-      return this._items[this._itemIndex][i];
+    if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
+      if (this.model.attributes[i].type == 'Date' && !(this._items[this._itemIndex][i] instanceof Date)) {
+        return new Date(this._items[this._itemIndex][i]); // todo problem with stores not keeping date type (mongo or host) kludge fix for now
+      } else {
+        return this._items[this._itemIndex][i];
+      }
+    }
   }
 };
 List.prototype.set = function (attribute, value) {
@@ -3017,9 +3022,7 @@ RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
     if (filter.hasOwnProperty(i)) {
       console.log('RemoteStore: before ' + i + ':' + filter[i] + '');
       if (filter[i] instanceof RegExp) {
-        filter[i] = filter[i].toString();
-        filter[i] = left(filter[i], filter[i].length - 1);
-        filter[i] = right(filter[i], filter[i].length - 1);
+        filter[i] = filter[i].source;
         filter[i] = 'RegExp:' + filter[i];
       }
       console.log('RemoteStore: after ' + i + ':' + filter[i] + '');

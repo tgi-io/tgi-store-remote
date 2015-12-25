@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.21',
+      version: '0.4.22',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -941,8 +941,13 @@ List.prototype.clear = function () {
 List.prototype.get = function (attribute) {
   if (this._items.length < 1) throw new Error('list is empty');
   for (var i = 0; i < this.model.attributes.length; i++) {
-    if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase())
-      return this._items[this._itemIndex][i];
+    if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
+      if (this.model.attributes[i].type == 'Date' && !(this._items[this._itemIndex][i] instanceof Date)) {
+        return new Date(this._items[this._itemIndex][i]); // todo problem with stores not keeping date type (mongo or host) kludge fix for now
+      } else {
+        return this._items[this._itemIndex][i];
+      }
+    }
   }
 };
 List.prototype.set = function (attribute, value) {
@@ -2935,7 +2940,7 @@ Transport.setMessageHandler('GetList', function (messageContents, fn) {
     if (filter.hasOwnProperty(i)) {
       console.log('GetList Handler: before ' + i + ':' + filter[i] + '');
       if (typeof filter[i] == 'string' && left(filter[i], 7) == 'RegExp:') {
-        filter[i] = new RegExp(right(filter[i], (filter[i].length) - 7));
+        filter[i] = new RegExp(right(filter[i], (filter[i].length) - 7),'i'); // todo instead of hard coding ignore case preserve original regexp correctly
       }
       console.log('GetList Handler: after ' + i + ':' + filter[i] + '');
     }
