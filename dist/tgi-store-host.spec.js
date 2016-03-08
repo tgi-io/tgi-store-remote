@@ -123,7 +123,7 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
       spec.example('should be required', Error('error creating Attribute: name required'), function () {
         new Attribute();
       });
-      spec.example('should allow shorthand string constructor for name property', 'Attribute: favoriteActorName', function () {
+      spec.example('should allow shorthand string constructor for name property', 'Attribute: favoriteActorName = null', function () {
         return new Attribute('favoriteActorName');
       });
     });
@@ -455,7 +455,7 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
       });
     });
     spec.heading('toString()', function () {
-      spec.example('should return a description of the attribute', 'Attribute: name', function () {
+      spec.example('should return a description of the attribute', 'Attribute: name = null', function () {
         return new Attribute({name: 'name'}).toString();
       });
     });

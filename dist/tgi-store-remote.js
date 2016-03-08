@@ -177,7 +177,7 @@ Attribute.ModelID.prototype.toString = function () {
  * Methods
  */
 Attribute.prototype.toString = function () {
-  return this.name === null ? 'new Attribute' : 'Attribute: ' + this.name;
+  return this.name === null ? 'new Attribute' : 'Attribute: ' + this.name + ' = ' + this.value;
 };
 Attribute.prototype.onEvent = function (events, callback) {
   if (!(events instanceof Array)) {
@@ -2836,7 +2836,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.REMOTE = function () {
   return {
-    version: '0.0.18',
+    version: '0.0.26',
     RemoteStore: RemoteStore
   };
 };
@@ -2920,15 +2920,23 @@ RemoteStore.prototype.getModel = function (model, callback) {
           var newAttribute = newAttributes[j];
           var name2 = newAttribute.name;
           if (name2 == name) {
-            if (newAttribute.value === undefined)
+            if (newAttribute.value === undefined || newAttribute.value === null) {
               attribute.value = null;
-            else
+            } else if (attribute.type == 'Date') {
+              try {
+                attribute.value = new Date(newAttribute.value);
+              } catch (e) {
+                attribute.value = null;
+              }
+            } else {
               attribute.value = newAttribute.value;
+            }
             gotOne = true;
           }
           if (!gotOne)
             attribute.value = null;
         }
+        //console.log('!!! GetModel attribute: ' + attribute);
       }
       if (typeof c == 'string')
         callback(model, c);
