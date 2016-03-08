@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.22',
+      version: '0.4.33',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -79,9 +79,11 @@ function Attribute(args, arg2) {
   }(this.type);
   this.type = splitTypes[0];
   this.hint = args.hint || {};
+  if (args.hidden !== undefined)
+    this.hidden = args.hidden;
   this.validationRule = args.validationRule || {};
   var unusedProperties = [];
-  var standardProperties = ['name', 'type', 'label', 'hint', 'value', 'validationRule'];
+  var standardProperties = ['name', 'type', 'label', 'hint', 'hidden', 'value', 'validationRule'];
   switch (this.type) {
     case 'ID':
       unusedProperties = getInvalidProperties(args, standardProperties);
@@ -943,7 +945,10 @@ List.prototype.get = function (attribute) {
   for (var i = 0; i < this.model.attributes.length; i++) {
     if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
       if (this.model.attributes[i].type == 'Date' && !(this._items[this._itemIndex][i] instanceof Date)) {
-        return new Date(this._items[this._itemIndex][i]); // todo problem with stores not keeping date type (mongo or host) kludge fix for now
+        if (this._items[this._itemIndex][i] === null || this._items[this._itemIndex][i] === undefined)
+          return null;
+        else
+          return new Date(this._items[this._itemIndex][i]); // todo problem with stores not keeping date type (mongo or host) kludge fix for now
       } else {
         return this._items[this._itemIndex][i];
       }
@@ -1098,6 +1103,13 @@ Model.prototype.getObjectStateErrors = function () {
     this.validationErrors.push('tags must be Array or null');
   }
   return this.validationErrors;
+};
+Model.prototype.attribute = function (attributeName) {
+  for (var i = 0; i < this.attributes.length; i++) {
+    if (this.attributes[i].name.toUpperCase() == attributeName.toUpperCase())
+      return this.attributes[i];
+  }
+  throw new Error('attribute not found in model: ' + attributeName);
 };
 Model.prototype.get = function (attribute) {
   for (var i = 0; i < this.attributes.length; i++) {
@@ -2824,7 +2836,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.REMOTE = function () {
   return {
-    version: '0.0.9',
+    version: '0.0.18',
     RemoteStore: RemoteStore
   };
 };
@@ -2898,17 +2910,24 @@ RemoteStore.prototype.getModel = function (model, callback) {
   if (!model.attributes[0].value) throw new Error('ID not set');
   if (typeof callback != "function") throw new Error('callback required');
   this.transport.send(new Message('GetModel', model), function (msg) {
-    //console.log('GetModel callback');
-    if (false && msg == 'Ack') { // todo wtf is this
-      callback(model);
-    } else if (msg.type == 'GetModelAck') {
-      var c = msg.contents;
-      model.attributes = [];
-      for (var a in c.attributes) {
-        if (c.attributes.hasOwnProperty(a)) {
-          var attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
-          attrib.value = c.attributes[a].value;
-          model.attributes.push(attrib);
+    if (msg.type == 'GetModelAck') {
+      var newAttributes = msg.contents.attributes;
+      for (var i = 0; i < model.attributes.length; i++) {
+        var attribute = model.attributes[i];
+        var name = model.attributes[i].name;
+        var gotOne = false;
+        for (var j = 0; j < newAttributes.length; j++) {
+          var newAttribute = newAttributes[j];
+          var name2 = newAttribute.name;
+          if (name2 == name) {
+            if (newAttribute.value === undefined)
+              attribute.value = null;
+            else
+              attribute.value = newAttribute.value;
+            gotOne = true;
+          }
+          if (!gotOne)
+            attribute.value = null;
         }
       }
       if (typeof c == 'string')
@@ -2948,12 +2967,15 @@ RemoteStore.prototype.putModel = function (model, callback) {
               modelID.name = contents.attributes[a].value.name;
 
 
-
             //  var v = new Attribute.ModelID(new Model());
             //  v.value = c.attributes[a].value;
             //  attrib = new Attribute({name:c.attributes[a].name, type:'Model',value:v});
 
-            attrib = new Attribute({name: contents.attributes[a].name, type: contents.attributes[a].type, value: modelID});
+            attrib = new Attribute({
+              name: contents.attributes[a].name,
+              type: contents.attributes[a].type,
+              value: modelID
+            });
 
             //attrib = new Attribute(c.attributes[a].name, c.attributes[a].type);
             //attrib.value = c.attributes[a].value;
@@ -3020,12 +3042,12 @@ RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
   if (typeof callback != "function") throw new Error('callback required');
   for (var i in filter)
     if (filter.hasOwnProperty(i)) {
-      console.log('RemoteStore: before ' + i + ':' + filter[i] + '');
+      //console.log('RemoteStore: before ' + i + ':' + filter[i] + '');
       if (filter[i] instanceof RegExp) {
         filter[i] = filter[i].source;
         filter[i] = 'RegExp:' + filter[i];
       }
-      console.log('RemoteStore: after ' + i + ':' + filter[i] + '');
+      //console.log('RemoteStore: after ' + i + ':' + filter[i] + '');
     }
   this.transport.send(new Message('GetList', {list: list, filter: filter, order: order}), function (msg) {
     if (false && msg == 'Ack') { // todo wtf is this
@@ -3033,6 +3055,8 @@ RemoteStore.prototype.getList = function (list, filter, arg3, arg4) {
     } else if (msg.type == 'GetListAck') {
       list._items = msg.contents._items;
       list._itemIndex = msg.contents._itemIndex;
+      //console.log('GetListAck..............');
+      //console.log(JSON.stringify(list));
       callback(list);
     } else {
       callback(list, Error(msg));

@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.22',
+      version: '0.4.33',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -79,9 +79,11 @@ function Attribute(args, arg2) {
   }(this.type);
   this.type = splitTypes[0];
   this.hint = args.hint || {};
+  if (args.hidden !== undefined)
+    this.hidden = args.hidden;
   this.validationRule = args.validationRule || {};
   var unusedProperties = [];
-  var standardProperties = ['name', 'type', 'label', 'hint', 'value', 'validationRule'];
+  var standardProperties = ['name', 'type', 'label', 'hint', 'hidden', 'value', 'validationRule'];
   switch (this.type) {
     case 'ID':
       unusedProperties = getInvalidProperties(args, standardProperties);
@@ -943,7 +945,10 @@ List.prototype.get = function (attribute) {
   for (var i = 0; i < this.model.attributes.length; i++) {
     if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
       if (this.model.attributes[i].type == 'Date' && !(this._items[this._itemIndex][i] instanceof Date)) {
-        return new Date(this._items[this._itemIndex][i]); // todo problem with stores not keeping date type (mongo or host) kludge fix for now
+        if (this._items[this._itemIndex][i] === null || this._items[this._itemIndex][i] === undefined)
+          return null;
+        else
+          return new Date(this._items[this._itemIndex][i]); // todo problem with stores not keeping date type (mongo or host) kludge fix for now
       } else {
         return this._items[this._itemIndex][i];
       }
@@ -1098,6 +1103,13 @@ Model.prototype.getObjectStateErrors = function () {
     this.validationErrors.push('tags must be Array or null');
   }
   return this.validationErrors;
+};
+Model.prototype.attribute = function (attributeName) {
+  for (var i = 0; i < this.attributes.length; i++) {
+    if (this.attributes[i].name.toUpperCase() == attributeName.toUpperCase())
+      return this.attributes[i];
+  }
+  throw new Error('attribute not found in model: ' + attributeName);
 };
 Model.prototype.get = function (attribute) {
   for (var i = 0; i < this.attributes.length; i++) {
@@ -2938,11 +2950,11 @@ Transport.setMessageHandler('GetList', function (messageContents, fn) {
   var filter = messageContents.filter;
   for (var i in filter)
     if (filter.hasOwnProperty(i)) {
-      console.log('GetList Handler: before ' + i + ':' + filter[i] + '');
+      //console.log('GetList Handler: before ' + i + ':' + filter[i] + '');
       if (typeof filter[i] == 'string' && left(filter[i], 7) == 'RegExp:') {
-        filter[i] = new RegExp(right(filter[i], (filter[i].length) - 7),'i'); // todo instead of hard coding ignore case preserve original regexp correctly
+        filter[i] = new RegExp(right(filter[i], (filter[i].length) - 7), 'i'); // todo instead of hard coding ignore case preserve original regexp correctly
       }
-      console.log('GetList Handler: after ' + i + ':' + filter[i] + '');
+      //console.log('GetList Handler: after ' + i + ':' + filter[i] + '');
     }
   var proxyList = new List(new Model());
   proxyList.model.modelType = messageContents.list.model.modelType;
@@ -2950,10 +2962,13 @@ Transport.setMessageHandler('GetList', function (messageContents, fn) {
   var msg;
 
   function messageCallback(list, error) {
-    if (typeof error == 'undefined')
+    if (typeof error == 'undefined') {
       msg = new Message('GetListAck', list);
-    else
+      //console.log('messageCallback..............');
+      //console.log(JSON.stringify(list));
+    } else {
       msg = new Message('GetListAck', error + "");
+    }
     fn(msg);
   }
 
