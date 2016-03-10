@@ -4,7 +4,7 @@
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.HOST = function () {
   return {
-    version: '0.0.9'
+    version: '0.0.30'
   };
 };
 
@@ -13,7 +13,6 @@ TGI.STORE.HOST = function () {
  */
 
 Transport.setMessageHandler('PutModel', function (messageContents, fn) {
-  console.log('PutModel here damn it');
   // create proxy for client model
   var ProxyPutModel = function (args) {
     Model.call(this, args);
@@ -32,7 +31,7 @@ Transport.setMessageHandler('PutModel', function (messageContents, fn) {
       } else if (messageContents.attributes[a].type == 'Date') {
         attrib = new Attribute(messageContents.attributes[a].name, messageContents.attributes[a].type);
         try {
-          attrib.value = new Date(messageContents.attributes[a].value);
+          attrib.value = messageContents.attributes[a].value === null ? null : new Date(messageContents.attributes[a].value);
         } catch (e) {
           attrib.value = null;
         }
