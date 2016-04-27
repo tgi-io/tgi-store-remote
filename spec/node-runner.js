@@ -41,7 +41,7 @@ var tgi = TGI.CORE();
 tgi.Transport.hostStore = new tgi.MemoryStore();
 
 io.on('connection', function (socket) {
-  console.log('socket.io connection: ' + socket.id);
+  //console.log('socket.io connection: ' + socket.id);
   socket.on('ackmessage', tgi.Transport.hostMessageProcess);
   socket.on('message', function (obj) {
     console.log('message socket.io message: ' + obj);

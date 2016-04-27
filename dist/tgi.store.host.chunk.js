@@ -4,7 +4,7 @@
 TGI.STORE = TGI.STORE || {};
 TGI.STORE.HOST = function () {
   return {
-    version: '0.0.30'
+    version: '0.0.31'
   };
 };
 
@@ -15,13 +15,13 @@ TGI.STORE.HOST = function () {
 Transport.setMessageHandler('PutModel', function (messageContents, fn) {
   // create proxy for client model
   var ProxyPutModel = function (args) {
+    //console.log('PutModel messageContents: json  ' + JSON.stringify(messageContents));
     Model.call(this, args);
     this.modelType = messageContents.modelType;
     this.attributes = [];
     var a, attrib, v;
     for (a in messageContents.attributes) {
-      //console.log('putting ' + messageContents.attributes[a]);
-      //console.log('json  ' + JSON.stringify(messageContents.attributes[a]));
+      //console.log('PutModel Attribute: json  ' + JSON.stringify(messageContents.attributes[a]));
       if (messageContents.attributes[a].type == 'Model') {
         v = new Attribute.ModelID(createModelFromModelType(messageContents.attributes[a].modelType));
         v.value = messageContents.attributes[a].value.value;
